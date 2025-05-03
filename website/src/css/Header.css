@@ -24,7 +24,7 @@
   color: var(--clr-neutral-800);
 }
 
-@media (max-width: 40em) {
+@media (max-width: 50em) {
   .primary-nav {
     display: none;
     position: fixed;

@@ -16,7 +16,7 @@ function useMediaQuery(query: string): boolean {
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const isSmall = useMediaQuery("(max-width: 40em)");
+  const isSmall = useMediaQuery("(max-width: 50em)");
 
   const toggleMenu = () => {
     document.body.style.overflowY = isMenuOpen ? "visible" : "hidden";

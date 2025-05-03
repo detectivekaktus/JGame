@@ -1,0 +1,42 @@
+.hero-description h1 {
+  font-size: var(--fs-900);
+  font-weight: var(--fw-bold);
+}
+
+.hero-description p {
+  font-size: var(--fs-600);
+  font-weight: var(--fw-regular);
+}
+
+.hero-buttons {
+  margin-top: var(--fs-700);
+}
+
+.hero-buttons .button:nth-child(2) {
+  margin-left: var(--fs-700);
+}
+
+.hero-example {
+  margin-top: var(--inner-spacing);
+}
+
+.hero-example h2 {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-600);
+  text-align: center;
+  color: var(--clr-accent-600);
+}
+
+.hero-example-options {
+  margin-top: var(--fs-600);
+  display: grid;
+  gap: var(--fs-400);
+}
+
+@media (min-width: 50em) {
+  .hero {
+    display: flex;
+    gap: var(--fs-900);
+    align-items: center;
+  }
+}

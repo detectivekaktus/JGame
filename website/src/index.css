@@ -8,11 +8,13 @@
   --clr-accent-500: rgba(224, 35, 61, 255);
   --clr-accent-600: rgba(213, 41, 65, 255);
   --clr-accent-700: rgba(162, 28, 47, 255);
+  --clr-accent-800: rgba(186, 70, 86, 255);
 
   --ff-primary: "Montserrat", sans-serif;
 
   --fw-regular: 400;
   --fw-medium: 500;
+  --fw-semi-bold: 600;
   --fw-bold: 700;
 
   --fs-200: 0.5rem;
@@ -24,10 +26,11 @@
   --fs-800: 2rem;
   --fs-900: 2rem;
 
-  --spacing: 5rem;
+  --spacing: 4rem;
+  --inner-spacing: 2.5rem;
 }
 
-@media (min-width: 40em) {
+@media (min-width: 50em) {
   :root {
     --fs-400: 1rem;
     --fs-500: 1.25rem;
@@ -120,6 +123,36 @@ svg {
 
   width: min(var(--max-width), 100% - var(--side-padding) * 2);
   margin-inline: auto;
+}
+
+.button {
+  border: none;
+  font-weight: var(--fw-semi-bold);
+  font-size: var(--fs-400);
+  color: var(--clr-neutral-100);
+  background-color: var(--clr-accent-600);
+  padding: var(--fs-400) var(--fs-800);
+  max-width: 100%;
+  width: fit-content;
+  box-shadow: 4px 4px 0 0 var(--clr-accent-700);
+  transition: 0.2s ease;
+}
+
+.button[datatype="stretch"] {
+  width: 100%;
+}
+
+.button:hover {
+  background-color: var(--clr-accent-700);
+}
+
+.button[datatype="dim"] {
+  background-color: var(--clr-accent-300);
+  box-shadow: 4px 4px 0 0 var(--clr-accent-800);
+}
+
+.button[datatype="dim"]:hover {
+  background-color: var(--clr-accent-800);
 }
 
 .fg-neutral-100 {
