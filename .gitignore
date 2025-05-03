@@ -1,0 +1,6 @@
+bin/
+web/build
+
+*.a
+*.o
+*.so
