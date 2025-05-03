@@ -1,8 +1,8 @@
-import "./css/App.css"
+import Home from "./pages/Home"
 
 function App() {
   return (
-    <h1 className="container">Hello world</h1>
+    <Home />
   )
 }
 
