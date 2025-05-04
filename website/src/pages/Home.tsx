@@ -42,6 +42,7 @@ export function Home() {
           <HomeCard title="Keep track of your progress on your profile"
             description="In your profile you can see your stats such as total matches played, win percentage, achievements and much more!"
             invert={true}>
+            {/* TODO: I still don't know how to make stat badges be a perfect square box that stick to the left*/}
             <div className="stats">
               <StatBadge title="Total matches" progress="49" color={StatBadgeColor.LIGHT}/>
               <StatBadge title="Total won" progress="27"/>
@@ -54,6 +55,12 @@ export function Home() {
               <img className="card-question" src="/home-card-question.png" alt="Question: The declaration of independence was signed on August 2, 1776" />
             </div>
           </HomeCard>
+        </section>
+        <section className="margin-top bg-accent-600 cta">
+          <div className="container">
+            <p>Sign up today to get the unforgettable quiz experience</p>
+            <a href="/signup"><button className="button" datatype="dim">Sign up</button></a>
+          </div>
         </section>
       </main>
     </>
