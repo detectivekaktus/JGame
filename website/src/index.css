@@ -118,7 +118,7 @@ svg {
 }
 
 .container {
-  --max-width: 1040px;
+  --max-width: 1200px;
   --side-padding: 1rem;
 
   width: min(var(--max-width), 100% - var(--side-padding) * 2);
@@ -217,6 +217,10 @@ svg {
 
 .bg-accent-700 {
   background-color: var(--clr-accent-700);
+}
+
+.bg-accent-800 {
+  background-color: var(--clr-accent-800);
 }
 
 .fw-regular {

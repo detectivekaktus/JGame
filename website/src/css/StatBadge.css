@@ -1,0 +1,15 @@
+.stat-badge {
+  text-align: center;
+  color: var(--clr-neutral-100);
+  padding: var(--fs-400);
+  font-size: var(--fs-400);
+  flex-grow: 1;
+}
+
+.stat-badge h3 {
+  font-weight: var(--fw-bold);
+}
+
+.stat-badge p {
+  font-weight: var(--fw-bold);
+}

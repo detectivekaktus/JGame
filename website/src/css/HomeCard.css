@@ -1,0 +1,50 @@
+.card {
+  margin-top: var(--spacing);
+  display: grid;
+  gap: var(--fs-400);
+}
+
+.card-description h2 {
+  text-align: center;
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-700);
+  margin-bottom: var(--fs-400);
+}
+
+.card-description p {
+  text-align: center;
+  font-size: var(--fs-400);
+}
+
+@media (min-width: 50em) {
+  .card {
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--spacing);
+  }
+
+  .card[datatype="inverted"] .card-description {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .card[datatype="inverted"] .card-content {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .card-description h2 {
+    text-align: left;
+  }
+
+  .card-description p {
+    text-align: left;
+  }
+
+  .card[datatype="inverted"] .card-description h2 {
+    text-align: right;
+  }
+
+  .card[datatype="inverted"] .card-description p {
+    text-align: right;
+  }
+}

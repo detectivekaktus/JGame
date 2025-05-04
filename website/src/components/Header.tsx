@@ -14,7 +14,7 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-function Header() {
+export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isSmall = useMediaQuery("(max-width: 50em)");
 
@@ -50,5 +50,3 @@ function Header() {
     </header>
   )
 }
-
-export default Header
