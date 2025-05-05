@@ -1,3 +1,4 @@
+import { Footer } from "../components/Footer"
 import { Header } from "../components/Header"
 import { HomeCard } from "../components/HomeCard"
 import { RoomCard } from "../components/RoomCard"
@@ -63,6 +64,8 @@ export function Home() {
           </div>
         </section>
       </main>
+      <Footer />
     </>
   )
 }
+
