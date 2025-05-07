@@ -1,0 +1,17 @@
+.content {
+  margin: 25vh 0;
+  display: flex;
+  gap: var(--fs-500);
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.content h1 {
+  font-size: var(--fs-900);
+  font-weight: var(--fw-bold);
+}
+
+.content p {
+  font-size: var(--fs-500);
+}

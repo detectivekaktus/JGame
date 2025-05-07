@@ -1,0 +1,24 @@
+import { createBrowserRouter } from "react-router-dom";
+import { HomePage } from "./pages/HomePage";
+import { NotFoundPage } from "./pages/NotFoundPage";
+import { LoginPage } from "./pages/LoginPage";
+import { SignupPage } from "./pages/SignupPage";
+
+export const APP_ROUTER = createBrowserRouter([
+  {
+    path: "/",
+    children: [
+      { index: true, Component: HomePage },
+      {
+        path: "auth",
+        children: [
+          { index: true, Component: NotFoundPage },
+          { path: "login", Component: LoginPage },
+          { path: "signup", Component: SignupPage }
+        ]
+      },
+      { path: "*", Component: NotFoundPage }
+    ]
+  },
+]);
+

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import { Footer } from "../components/Footer"
 import { Header } from "../components/Header"
 import { HomeCard } from "../components/HomeCard"
@@ -5,7 +6,8 @@ import { RoomCard } from "../components/RoomCard"
 import { StatBadge, StatBadgeColor } from "../components/StatBadge"
 import "../css/Home.css"
 
-export function Home() {
+
+export function HomePage() {
   return (
     <>
       <Header />
@@ -17,8 +19,8 @@ export function Home() {
               <p>Enjoy puzzles with your friends anywhere at any time</p>
             </div>
             <div className="hero-buttons">
-              <a href="/signup"><button className="button">Sign up</button></a>
-              <a href="/login"><button className="button" datatype="dim">Log in</button></a>
+              <Link to="/auth/signup"><button className="button">Sign up</button></Link>
+              <Link to="/auth/login"><button className="button" datatype="dim">Log in</button></Link>
             </div>
           </div>
           <div className="hero-example">
@@ -60,7 +62,7 @@ export function Home() {
         <section className="margin-top bg-accent-600 cta">
           <div className="container">
             <p>Sign up today to get the unforgettable quiz experience</p>
-            <a href="/signup"><button className="button" datatype="dim">Sign up</button></a>
+            <Link to="/auth/signup"><button className="button" datatype="dim">Sign up</button></Link>
           </div>
         </section>
       </main>
