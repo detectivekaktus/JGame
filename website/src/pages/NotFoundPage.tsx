@@ -6,14 +6,14 @@ import "../css/NotFoundPage.css"
 export function NotFoundPage() {
   const navigate = useNavigate();
   return (
-    <>
+    <div className="page-wrapper">
       <Header />
-      <div className="content">
+      <div className="page content">
         <h1>404 Not Found</h1>
         <p>It looks like you're lost 🤔</p>
         <button className="button" onClick={() => navigate(-1)}>Go back</button>
       </div>
       <Footer />
-    </>
+    </div>
   );
 }

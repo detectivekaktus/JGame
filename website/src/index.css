@@ -266,3 +266,17 @@ svg {
 .margin-bottom {
   margin-bottom: var(--spacing);
 }
+
+.underlined {
+  text-decoration: underline;
+}
+
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.page {
+  flex: 1;
+}

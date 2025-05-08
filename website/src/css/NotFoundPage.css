@@ -1,5 +1,4 @@
 .content {
-  margin: 25vh 0;
   display: flex;
   gap: var(--fs-500);
   flex-direction: column;

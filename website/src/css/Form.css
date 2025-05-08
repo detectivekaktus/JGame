@@ -1,0 +1,54 @@
+.login-two-col {
+  display: grid;
+}
+
+.login-two-col-title {
+  display: none;
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-900);
+}
+
+.login-two-col-form h2 {
+  text-align: center;
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-800);
+}
+
+.login-two-col-form p {
+  text-align: center;
+  font-size: var(--fs-400);
+}
+
+.login-two-col-form form {
+  margin: var(--inner-spacing) 0;
+  display: grid;
+  gap: var(--fs-800);
+}
+
+.form-entry {
+  display: grid;
+  font-size: var(--fs-500);
+}
+
+.form-entry input {
+  padding: 5px;
+  border: 1px solid var(--clr-neutral-800);
+  transition: 0.2s ease;
+}
+
+.form-entry input:focus {
+  outline: none;
+  border: 1px solid var(--clr-accent-600);
+}
+
+@media (min-width: 50em) {
+  .login-two-col {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing);
+  }
+
+  .login-two-col-title {
+    display: grid;
+    align-items: center;
+  }
+}

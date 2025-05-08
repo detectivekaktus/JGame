@@ -1,6 +1,6 @@
 .main-footer {
   color: var(--clr-neutral-200);
-  padding: var(--spacing) 0 var(--fs-700) 0;
+  padding: var(--fs-700) 0;
 }
 
 .main-footer .container {
