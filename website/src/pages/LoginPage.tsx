@@ -2,8 +2,6 @@ import { Link } from "react-router-dom";
 import { Footer } from "../components/Footer"
 import "../css/Form.css"
 
-// TODO: login-two-col-form ignores the parent size
-// when the screen width goes below 330px
 export function LoginPage() {
   return (
     <div className="page-wrapper">
