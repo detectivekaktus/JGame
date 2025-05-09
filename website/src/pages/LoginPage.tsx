@@ -6,11 +6,11 @@ export function LoginPage() {
   return (
     <div className="page-wrapper">
       <div className="margin-top margin-bottom container page">
-        <div className="login-two-col">
-          <div className="login-two-col-title">
+        <div className="auth-two-col">
+          <div className="auth-two-col-title">
             <h1>Welcome back! Hope you're about to have a good playing session!</h1>
           </div>
-          <div className="login-two-col-form">
+          <div className="auth-two-col-form">
             <h2>Log in</h2>
             <form>
               <div className="form-entry">

@@ -1,25 +1,25 @@
-.login-two-col {
+.auth-two-col {
   display: grid;
 }
 
-.login-two-col-title {
+.auth-two-col-title {
   display: none;
   font-weight: var(--fw-bold);
   font-size: var(--fs-900);
 }
 
-.login-two-col-form h2 {
+.auth-two-col-form h2 {
   text-align: center;
   font-weight: var(--fw-bold);
   font-size: var(--fs-800);
 }
 
-.login-two-col-form p {
+.auth-two-col-form p {
   text-align: center;
   font-size: var(--fs-400);
 }
 
-.login-two-col-form form {
+.auth-two-col-form form {
   margin: var(--inner-spacing) 0;
   display: grid;
   gap: var(--fs-800);
@@ -43,12 +43,12 @@
 }
 
 @media (min-width: 50em) {
-  .login-two-col {
+  .auth-two-col {
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing);
   }
 
-  .login-two-col-title {
+  .auth-two-col-title {
     display: grid;
     align-items: center;
   }

@@ -6,7 +6,7 @@ export function Footer() {
     <footer className="bg-neutral-700 main-footer">
       <div className="container">
         <div className="copyright">
-          <img src="/JGame.svg" alt="JGame logo" />
+          <Link to="/"><img src="/JGame.svg" alt="JGame logo" /></Link>
           <p>Made with ❤️ by Artiom Astashonak<br />
             Copyright © 2025. All rights reserved.</p>
         </div>
