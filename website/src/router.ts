@@ -4,6 +4,7 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { MainPage } from "./pages/MainPage";
+import { ProfilePage } from "./pages/ProfilePage";
 
 export const APP_ROUTER = createBrowserRouter([
   {
@@ -17,6 +18,13 @@ export const APP_ROUTER = createBrowserRouter([
           { index: true, Component: NotFoundPage },
           { path: "login", Component: LoginPage },
           { path: "signup", Component: SignupPage }
+        ]
+      },
+      {
+        path: "profile",
+        children: [
+          { index: true, Component: NotFoundPage },
+          { path: ":id", Component: ProfilePage }
         ]
       },
       { path: "*", Component: NotFoundPage }

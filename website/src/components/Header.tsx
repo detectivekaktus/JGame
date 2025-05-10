@@ -35,9 +35,9 @@ export function Header() {
     <header className="primary-header">
       <div className="container">
         <div className="nav-wrapper">
-          <Link to="#"><img src="/JGame.svg" alt="JGame logo" /></Link>
+          <Link to="/"><img src="/JGame.svg" alt="JGame logo" /></Link>
           <button className="primary-nav-mobile-toggle" aria-controls="primary-navigation" aria-expanded={isMenuOpen && isSmall ? "true" : "false"} onClick={toggleMenu}>
-            <img className="hamburger" src="hamburger.png" alt="" aria-hidden="true" />
+            <img className="hamburger" src="/hamburger.png" alt="" aria-hidden="true" />
             <span className="sr-only">Menu</span>
           </button>
           <nav className={`primary-nav ${isMenuOpen && isSmall ? "opened" : ""}`}>

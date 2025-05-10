@@ -1,0 +1,25 @@
+.profile {
+  display: grid;
+  gap: var(--inner-spacing);
+}
+
+.name-picture {
+  font-size: var(--fs-900);
+  font-weight: var(--fw-bold);
+}
+
+.profile-stats h2 {
+  font-size: var(--fs-700);
+  font-weight: var(--fw-bold);
+}
+
+.profile-stats ul {
+  display: grid;
+  gap: var(--fs-400);
+}
+
+@media (min-width: 50em) {
+  .profile-stats ul {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
