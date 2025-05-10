@@ -280,3 +280,7 @@ svg {
 .page {
   flex: 1;
 }
+
+.stretch {
+  width: 100%;
+}

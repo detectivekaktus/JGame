@@ -16,6 +16,7 @@ function useMediaQuery(query: string): boolean {
   return matches;
 }
 
+// TODO: if user is logged in, change the navigtaion items.
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isSmall = useMediaQuery("(max-width: 50em)");

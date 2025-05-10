@@ -21,7 +21,7 @@ export function LoginPage() {
                 <label htmlFor="password">Password</label>
                 <input required id="password" name="password" type="password" />
               </div>
-              <button type="submit" className="button" datatype="stretch">Log in</button>
+              <button type="submit" className="button stretch">Log in</button>
             </form>
             <p>Don't have an account?  <Link className="fg-accent-600 underlined" to={"/auth/signup"}>Create one</Link></p>
           </div>

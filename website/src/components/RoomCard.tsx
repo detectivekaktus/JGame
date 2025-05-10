@@ -8,7 +8,7 @@ type RoomCardProps = {
 
 export function RoomCard({ name, curUsers, maxUsers }: RoomCardProps) {
   return (
-    <button className="button room" datatype="stretch">
+    <button className="button room stretch">
       <h3>{name}</h3>
       <p>{curUsers}/{maxUsers}</p>
     </button>

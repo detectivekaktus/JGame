@@ -29,7 +29,7 @@ export function SignupPage() {
                 <label htmlFor="re-password">Repeat password</label>
                 <input required id="re-password" name="re-password" type="password" />
               </div>
-              <button type="submit" className="button" datatype="stretch">Sign up</button>
+              <button type="submit" className="button stretch" >Sign up</button>
             </form>
             <p>Already have an account?  <Link className="fg-accent-600 underlined" to={"/auth/login"}>Log in</Link></p>
           </div>

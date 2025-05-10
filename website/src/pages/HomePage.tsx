@@ -26,10 +26,10 @@ export function HomePage() {
           <div className="hero-example">
             <h2>When was the declaration of independence signed?</h2>
             <ul className="hero-example-options">
-              <li><button className="button" datatype="stretch">August 2, 1776</button></li>
-              <li><button className="button" datatype="stretch">September 1, 1781</button></li>
-              <li><button className="button" datatype="stretch">July 2, 1770</button></li>
-              <li><button className="button" datatype="stretch">April 19, 1775</button></li>
+              <li><button className="button stretch">August 2, 1776</button></li>
+              <li><button className="button stretch">September 1, 1781</button></li>
+              <li><button className="button stretch">July 2, 1770</button></li>
+              <li><button className="button stretch">April 19, 1775</button></li>
             </ul>
           </div>
         </section>

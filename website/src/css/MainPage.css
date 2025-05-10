@@ -1,0 +1,45 @@
+.menu-rooms h2 {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-700);
+}
+
+.main-menu {
+  display: grid;
+  gap: var(--inner-spacing);
+}
+
+.menu-nav {
+  color: var(--clr-neutral-100);
+}
+
+.menu-nav-room-desc {
+  padding: var(--fs-400);
+  margin-bottom: var(--inner-spacing);
+}
+
+.menu-nav-room-desc h2 {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-400);
+}
+
+.menu-nav-room {
+  display: grid;
+  gap: var(--fs-400);
+}
+
+.menu-nav-room ul {
+  display: grid;
+  gap: var(--fs-400);
+}
+
+
+.menu-rooms-list {
+  display: grid;
+  gap: var(--fs-400);
+}
+
+@media (min-width: 50em) {
+  .main-menu {
+    grid-template-columns: 2fr 1fr;
+  }
+}

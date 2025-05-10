@@ -3,12 +3,14 @@ import { HomePage } from "./pages/HomePage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
+import { MainPage } from "./pages/MainPage";
 
 export const APP_ROUTER = createBrowserRouter([
   {
     path: "/",
     children: [
       { index: true, Component: HomePage },
+      { path: "main", Component: MainPage },
       {
         path: "auth",
         children: [
