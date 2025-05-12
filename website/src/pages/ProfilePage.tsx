@@ -10,13 +10,14 @@ type ProfileParams = {
 
 export function ProfilePage() {
   const { id } = useParams<ProfileParams>();
+  (id)
 
   return (
     <div className="page-wrapper">
       <Header />
       <main className="margin-top margin-bottom container profile page">
         <div className="name-picture">
-          { /* Render profile picture */ }
+          { /* TODO: Render profile picture */ }
           <h1>Profile name</h1>
         </div>
         <div className="profile-stats">

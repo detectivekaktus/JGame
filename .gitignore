@@ -4,3 +4,5 @@ web/build
 *.a
 *.o
 *.so
+
+.env
