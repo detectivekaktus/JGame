@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 BIN=bin
 TARGET=jgame
-export BACKEND_DEV=1
 
 backend() {
-  if [[ $BACKEND_DEV = 1 ]]; then echo "Building backend in development mode...";
+  if [[ "$BACKEND_DEV" = "1" ]]; then echo "Building backend in development mode...";
   else echo "Building backend in production mode..."; fi
   mkdir -p $BIN
   go build -o ./$BIN/$TARGET ./cmd/$TARGET
@@ -31,7 +30,9 @@ case "$1" in
       echo "No argument after *run* command."
       exit 1
     elif [ "$2" = "back" ]; then
+      export BACKEND_DEV="1"
       backend
+      echo "Running the server..."
       ./$BIN/$TARGET
     else
       echo "Unknown application *${2}*"
@@ -39,6 +40,7 @@ case "$1" in
     fi
     ;;
   back)
+    export BACKEND_DEV="1"
     backend
     ;;
   front)
@@ -51,7 +53,6 @@ case "$1" in
     ;;
   *)
     if [ -z "$1" ]; then
-      BACKEND_DEV=0
       all
     else
       echo "Unknown command *${1}*"
