@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
-DBNAME=jgamedb
-USERNAME=jgameuser
+DBNAME=jgame_db
+OWNER=jgame_owner
+USER=jgame_backend
 
 if [ $(whoami) != "postgres" ]; then
   echo "ERROR: You must run the script as postgres user."
@@ -10,4 +11,5 @@ if [ $(whoami) != "postgres" ]; then
 fi
 
 dropdb $DBNAME
-dropuser $USERNAME
+dropuser $OWNER
+dropuser $USER
