@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -e
+
 BIN=bin
 TARGET=jgame
 
