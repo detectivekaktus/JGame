@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/detectivekaktus/JGame/internal/database"
+	"github.com/detectivekaktus/JGame/internal/httputil"
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,9 +21,9 @@ type User struct {
 }
 
 type UserResponse struct {
-	Id       int    `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
+	Id    int    `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 func hashPassword(passwd string) (string, error) {
@@ -33,20 +34,12 @@ func hashPassword(passwd string) (string, error) {
 func PostUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	if ctnType := r.Header.Get("Content-Type"); ctnType != "application/json" {
-		SendErrorMessage(w, http.StatusBadRequest, "Content error",
-			fmt.Sprintf("Excepted to find Content-Type `application/json`, found `%s`.", ctnType))
-		return
-	}
-
-	if r.ContentLength == 0 {
-		SendErrorMessage(w, http.StatusBadRequest, "Content error",
-			"Expected a valid user JSON in the body, got nothing.")
+	if !httputil.IsContentType(w, r, "application/json") || !httputil.HasContent(w, r) {
 		return
 	}
 
 	if _, err := r.Cookie("session_id"); err == nil {
-		SendErrorMessage(w, http.StatusForbidden, "Authentication error",
+		httputil.SendErrorMessage(w, http.StatusForbidden, "Authentication error",
 			"Cannot POST a user while logged in.")
 		return
 	}
@@ -55,7 +48,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not process JSON body for POST /api/users: %v\n", err)
-		SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not process the body of the request.")
 		return
 	}
@@ -63,7 +56,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	hash, err := hashPassword(user.Password)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not generate password hash for POST /api/users: %v\n", err)
-		SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not process user password.")
 		return
 	}
@@ -78,13 +71,13 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == database.UniqueViolation {
 			fmt.Fprintf(os.Stderr, "Unique email constraint violation when inserting new user for POST /api/users: %v\n", err)
-			SendErrorMessage(w, http.StatusConflict, "Internal error",
+			httputil.SendErrorMessage(w, http.StatusConflict, "Internal error",
 				"A user with this email address already exists.")
 			return
 		}
 
 		fmt.Fprintf(os.Stderr, "Could not insert new user in the table for POST /api/users: %v\n", err)
-		SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not create user.")
 		return
 	}
