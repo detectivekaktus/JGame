@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/detectivekaktus/JGame/internal/database"
+	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -53,7 +54,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not process JSON body for POST /api/user: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not process JSON body for POST /api/users: %v\n", err)
 		SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not process the body of the request.")
 		return
@@ -61,7 +62,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 
 	hash, err := hashPassword(user.Password)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not generate password hash for POST /api/user: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not generate password hash for POST /api/users: %v\n", err)
 		SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not process user password.")
 		return
@@ -75,7 +76,14 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	err = database.QueryRow(conn, "INSERT INTO users.\"user\" (name, email, password) VALUES ($1, $2, $3) RETURNING user_id",
 		user.Name, user.Email, user.Password).Scan(&id)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not insert new user in the table for POST /api/user: %v\n", err)
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == database.UniqueViolation {
+			fmt.Fprintf(os.Stderr, "Unique email constraint violation when inserting new user for POST /api/users: %v\n", err)
+			SendErrorMessage(w, http.StatusConflict, "Internal error",
+				"A user with this email address already exists.")
+			return
+		}
+
+		fmt.Fprintf(os.Stderr, "Could not insert new user in the table for POST /api/users: %v\n", err)
 		SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not create user.")
 		return

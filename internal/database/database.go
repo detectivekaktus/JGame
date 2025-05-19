@@ -11,6 +11,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+const (
+	UniqueViolation = "23505"
+)
+
 // Establishes the connection to the PostgreSQL database.
 // You must first set up DATABASE_URL environment variable in
 // the `.env` file inside the root directory of the project.
