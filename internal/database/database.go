@@ -8,6 +8,7 @@ import (
 
 	"github.com/detectivekaktus/JGame/internal/config"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // Establishes the connection to the PostgreSQL database.
@@ -17,7 +18,7 @@ import (
 //
 // Don't forget to close the connection on the database once
 // you're done using it.
-func getConnection() *pgx.Conn {
+func GetConnection() *pgx.Conn {
 	conn, err := pgx.Connect(context.Background(), config.AppConfig.DbUrl)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to the database: %v\n", err)
@@ -32,10 +33,7 @@ func getConnection() *pgx.Conn {
 //
 // TODO: Introduce parameter timeoutSec for handling the
 // context timeout time for the query.
-func QueryRow(query string, args ...any) pgx.Row {
-	conn := getConnection()
-	defer conn.Close(context.Background())
-
+func QueryRow(conn *pgx.Conn, query string, args ...any) pgx.Row {
 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
 	defer cancel()
 
@@ -45,15 +43,13 @@ func QueryRow(query string, args ...any) pgx.Row {
 // Queries rows from the database as backend user.
 // This function wraps the pgx.Conn.Query for
 // simplicity and consistency.
+//
 // Don't forget to close the rows after you're done
 // using them.
 //
 // TODO: Introduce parameter timeoutSec for handling the
 // context timeout time for the query.
-func QueryRows(query string, args ...any) pgx.Rows {
-	conn := getConnection()
-	defer conn.Close(context.Background())
-
+func QueryRows(conn *pgx.Conn, query string, args ...any) pgx.Rows {
 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
 	defer cancel()
 
@@ -65,18 +61,15 @@ func QueryRows(query string, args ...any) pgx.Rows {
 }
 
 // Executes an SQL statement as backend user on the database.
-// Return 0 on success, 1 on failure.
-func Execute(stmnt string, args ...any) int {
-	conn := getConnection()
-	defer conn.Close(context.Background())
-
+// The function wraps around pgx.Conn.Exec, see it for the return
+// values.
+func Execute(conn *pgx.Conn, stmnt string, args ...any) (pgconn.CommandTag, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
 	defer cancel()
 
-	_, err := conn.Exec(ctx, stmnt, args...)
+	retVal, err := conn.Exec(ctx, stmnt, args...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not exec %s: %v\n", stmnt, err)
-		return 1
 	}
-	return 0
+	return retVal, err
 }

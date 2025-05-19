@@ -80,3 +80,7 @@ psql -d $DBNAME -U $OWNER -c "GRANT USAGE ON SCHEMA packs TO $USER;"
 # impact on the application.
 psql -d $DBNAME -U $OWNER -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA users TO $USER;"
 psql -d $DBNAME -U $OWNER -c "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA packs TO $USER;"
+
+# Give USAGE and SELECT privileges on sequences (serials?) to the database user.
+psql -d $DBNAME -U $OWNER -c "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA users TO $USER;"
+psql -d $DBNAME -U $OWNER -c "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA packs TO $USER;"
