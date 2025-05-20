@@ -2,7 +2,6 @@ package httputil
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -14,12 +13,9 @@ type ErrorMsg struct {
 // Sets `status` status code for the `w` writer.
 // Writes a JSON error message with the `status` status, `error`
 // title, and `msg` message.
-//
-// You must first set the Content-Type header to application/json
-// before calling this function.
 func SendErrorMessage(w http.ResponseWriter, status int, error, msg string) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-
 	json.NewEncoder(w).Encode(ErrorMsg{
 		Error: error,
 		Message: msg,
@@ -32,8 +28,6 @@ func SendErrorMessage(w http.ResponseWriter, status int, error, msg string) {
 // and no actions are done.
 func IsContentType(w http.ResponseWriter, r *http.Request, expected string) bool {
 	if ctnType := r.Header.Get("Content-Type"); ctnType != expected {
-		SendErrorMessage(w, http.StatusBadRequest, "Content error",
-			fmt.Sprintf("Excepted to find Content-Type `%s`, found `%s`.", expected, ctnType))
 		return false
 	}
 	return true

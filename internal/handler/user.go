@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/detectivekaktus/JGame/internal/database"
@@ -72,14 +73,14 @@ func hashPassword(passwd string) (string, error) {
 }
 
 func PostUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	if !httputil.IsContentType(w, r, "application/json") {
+		httputil.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
+			"Expected Content-Type to be application/json.")
 		return
 	}
 
 	if !httputil.HasContent(r) {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "Content error",
+		httputil.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
 			"Expected content inside the request body, got nothing.")
 		return
 	}
@@ -128,7 +129,9 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+
 	json.NewEncoder(w).Encode(VerifiedUserResponse{
 		Id: id,
 		Name: user.Name,
@@ -137,8 +140,6 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	if httputil.HasContent(r) {
 		httputil.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
 			"This endpoint does not accept a request body.")
@@ -167,6 +168,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	if session, _ := getUserSession(conn, r); session != nil {
@@ -184,4 +186,41 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		Id: user.Id,
 		Name: user.Name,
 	})
+}
+
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	if httputil.HasContent(r) {
+		httputil.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
+			"This endpoint does not accept a request body.")
+		return
+	}
+
+	conn := database.GetConnection()
+	defer conn.Close(context.Background())
+
+	session, _ := getUserSession(conn, r)
+	if session == nil {
+		httputil.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
+			"Can't delete user when not logged in.")
+		return
+	}
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	if int_id, _ := strconv.Atoi(id); session.UserId != int_id {
+		httputil.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			"Can't delete user that is not themselves.")
+		return
+	}
+
+	_, err := database.Execute(conn, "DELETE FROM users.\"user\" WHERE user_id = $1", id)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not delete user for DELETE /api/users/id: %v\n", err)
+		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not delete user with the given id.")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
