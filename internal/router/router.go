@@ -9,6 +9,7 @@ func NewRouter() *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/api/users", handler.PostUser).Methods("POST")
+	r.HandleFunc("/api/users/{id:[0-9]+}", handler.GetUser).Methods("GET")
 
 	return r
 }

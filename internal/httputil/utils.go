@@ -39,15 +39,7 @@ func IsContentType(w http.ResponseWriter, r *http.Request, expected string) bool
 	return true
 }
 
-// Asserts the request has content. If there's no body in the request,
-// false is returned and the error is sent via HTTP to the client. Otherise
-// true is returned and no actions are done.
-func HasContent(w http.ResponseWriter, r *http.Request) bool {
-	if r.ContentLength == 0 {
-		SendErrorMessage(w, http.StatusBadRequest, "Content error",
-			"Expected content inside the request body, got nothing.")
-		return false
-	}
-	return true
+// Returns true of the request has provided body, false otherwise.
+func HasContent(r *http.Request) bool {
+	return r.ContentLength > 0
 }
-
