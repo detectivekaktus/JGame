@@ -10,12 +10,10 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/detectivekaktus/JGame/internal/database"
-	"github.com/detectivekaktus/JGame/internal/httputil"
+	"github.com/detectivekaktus/JGame/internal/httputils"
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -25,13 +23,6 @@ type User struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
-}
-
-type Session struct {
-	Id        int
-	UserId    int
-	CreatedAt time.Time
-	ExpiresAt time.Time
 }
 
 type VerifiedUserResponse struct {
@@ -45,43 +36,20 @@ type UnverifiedUserResponse struct {
 	Name  string `json:"name"`
 }
 
-// Return the user session stored in the database. The session is retrieved
-// via `session_id` cookie attached to the request. If the cookie is not set
-// nil is returned. If the session expired nil is returned.
-func getUserSession(conn *pgx.Conn, r *http.Request) (*Session, error) {
-	session_cookie, err := r.Cookie("session_id")
-	if err != nil {
-		return nil, err
-	}
-
-	var session Session
-	err = database.QueryRow(conn, "SELECT * FROM users.user_session WHERE session_id = $1", session_cookie.Value).
-		Scan(&session.Id, &session.UserId, &session.CreatedAt, &session.ExpiresAt)
-	if err != nil {
-		return nil, err
-	}
-
-	if time.Now().After(session.ExpiresAt) {
-		return nil, err
-	}
-
-	return &session, nil
-}
-
 func hashPassword(passwd string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(passwd), bcrypt.DefaultCost)
 	return string(hash), err
 }
 
 func PostUser(w http.ResponseWriter, r *http.Request) {
-	if !httputil.IsContentType(w, r, "application/json") {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
+	if !httputils.IsContentType(w, r, "application/json") {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
 			"Expected Content-Type to be application/json.")
 		return
 	}
 
-	if !httputil.HasContent(r) {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
+	if !httputils.HasContent(r) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
 			"Expected content inside the request body, got nothing.")
 		return
 	}
@@ -90,7 +58,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close(context.Background())
 
 	if session, _ := getUserSession(conn, r); session != nil {
-		httputil.SendErrorMessage(w, http.StatusForbidden, "Authentication error",
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Authentication error",
 			"Cannot POST a user while logged in.")
 		return
 	}
@@ -98,7 +66,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
 			"Could not process the body of the request.")
 		return
 	}
@@ -106,7 +74,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	hash, err := hashPassword(user.Password)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not generate password hash for POST /api/users: %v\n", err)
-		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not process user password.")
 		return
 	}
@@ -118,13 +86,13 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == database.UniqueViolation {
 			fmt.Fprintf(os.Stderr, "Unique email constraint violation when inserting new user for POST /api/users: %v\n", err)
-			httputil.SendErrorMessage(w, http.StatusConflict, "Internal error",
+			httputils.SendErrorMessage(w, http.StatusConflict, "Internal error",
 				"A user with this email address already exists.")
 			return
 		}
 
 		fmt.Fprintf(os.Stderr, "Could not insert new user in the table for POST /api/users: %v\n", err)
-		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not create user.")
 		return
 	}
@@ -140,8 +108,8 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
-	if httputil.HasContent(r) {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
+	if httputils.HasContent(r) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
 			"This endpoint does not accept a request body.")
 		return
 	}
@@ -157,13 +125,13 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		Scan(&user.Id, &user.Email, &user.Name)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			httputil.SendErrorMessage(w, http.StatusNotFound, "Not found",
+			httputils.SendErrorMessage(w, http.StatusNotFound, "Not found",
 				"No user with given id exists.")
 			return
 		}
 
 		fmt.Fprintf(os.Stderr, "Could not get user from database for GET /api/users/id: %v\n", err)
-		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not get the user with the given id.")
 		return
 	}
@@ -189,8 +157,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	if httputil.HasContent(r) {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
+	if httputils.HasContent(r) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
 			"This endpoint does not accept a request body.")
 		return
 	}
@@ -200,7 +168,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	session, _ := getUserSession(conn, r)
 	if session == nil {
-		httputil.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
+		httputils.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
 			"Can't delete user when not logged in.")
 		return
 	}
@@ -209,7 +177,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	if int_id, _ := strconv.Atoi(id); session.UserId != int_id {
-		httputil.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
 			"Can't delete user that is not themselves.")
 		return
 	}
@@ -217,7 +185,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	_, err := database.Execute(conn, "DELETE FROM users.\"user\" WHERE user_id = $1", id)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not delete user for DELETE /api/users/id: %v\n", err)
-		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not delete user with the given id.")
 		return
 	}
@@ -226,14 +194,14 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutUser(w http.ResponseWriter, r *http.Request) {
-	if !httputil.IsContentType(w, r, "application/json") {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
+	if !httputils.IsContentType(w, r, "application/json") {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
 			"Expected Content-Type to be application/json.")
 		return
 	}
 
-	if !httputil.HasContent(r) {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
+	if !httputils.HasContent(r) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
 			"Expected content inside the request body, got nothing.")
 		return
 	}
@@ -243,7 +211,7 @@ func PutUser(w http.ResponseWriter, r *http.Request) {
 
 	session, _ := getUserSession(conn, r)
 	if session == nil {
-		httputil.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
+		httputils.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
 			"Can't update user when not logged in.")
 		return
 	}
@@ -252,7 +220,7 @@ func PutUser(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	if int_id, _ := strconv.Atoi(id); session.UserId != int_id {
-		httputil.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
 			"Can't update user that is not themselves.")
 		return
 	}
@@ -260,19 +228,19 @@ func PutUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
 			"Could not process the body of the request.")
 		return
 	}
 
 	if user.Id != 0 {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
 			"Can't modify id of a user.")
 		return
 	}
 
-	if strings.TrimSpace(user.Name) == "" || strings.TrimSpace(user.Email) == "" || strings.TrimSpace(user.Password) == "" {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "Missing fields",
+	if strings.TrimSpace(user.Name) == "" || strings.TrimSpace(user.Email) == "" || user.Password == "" {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Missing fields",
 			"name, email, and password fields must be specified on PUT request.")
 		return
 	}
@@ -280,7 +248,7 @@ func PutUser(w http.ResponseWriter, r *http.Request) {
 	hash, err := hashPassword(user.Password)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not generate password hash for PUT /api/users/id: %v\n", err)
-		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not process user password.")
 		return
 	}
@@ -290,7 +258,7 @@ func PutUser(w http.ResponseWriter, r *http.Request) {
 		user.Name, user.Email, user.Password, id)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not update user for PUT /api/users/id: %v\n", err)
-		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not update user.")
 		return
 	}
@@ -299,14 +267,14 @@ func PutUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func PatchUser(w http.ResponseWriter, r *http.Request) {
-	if !httputil.IsContentType(w, r, "application/json") {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
+	if !httputils.IsContentType(w, r, "application/json") {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
 			"Expected Content-Type to be application/json.")
 		return
 	}
 
-	if !httputil.HasContent(r) {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
+	if !httputils.HasContent(r) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
 			"Expected content inside the request body, got nothing.")
 		return
 	}
@@ -316,7 +284,7 @@ func PatchUser(w http.ResponseWriter, r *http.Request) {
 
 	session, _ := getUserSession(conn, r)
 	if session == nil {
-		httputil.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
+		httputils.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
 			"Can't update user when not logged in.")
 		return
 	}
@@ -325,7 +293,7 @@ func PatchUser(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	if int_id, _ := strconv.Atoi(id); session.UserId != int_id {
-		httputil.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
 			"Can't update user that is not themselves.")
 		return
 	}
@@ -333,13 +301,13 @@ func PatchUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
 			"Could not process the body of the request.")
 		return
 	}
 
 	if user.Id != 0 {
-		httputil.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
 			"Can't modify id of a user.")
 		return
 	}
@@ -371,7 +339,7 @@ func PatchUser(w http.ResponseWriter, r *http.Request) {
 		hash, err := hashPassword(user.Password)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not generate password hash for PATCH /api/users/id: %v\n", err)
-			httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 				"Could not process user password.")
 			return
 		}
@@ -386,7 +354,7 @@ func PatchUser(w http.ResponseWriter, r *http.Request) {
 	_, err = database.Execute(conn, fieldsSb.String(), args...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not update user for PATCH /api/users/id: %v\n", err)
-		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not update user.")
 		return
 	}

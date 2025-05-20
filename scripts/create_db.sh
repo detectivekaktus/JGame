@@ -52,7 +52,7 @@ psql -d $DBNAME -U $OWNER -c "CREATE TABLE users.\"user\"(
 );"
 
 psql -d $DBNAME -U $OWNER -c "CREATE TABLE users.user_session(
-  session_id INT PRIMARY KEY,
+  session_id TEXT PRIMARY KEY,
   user_id INT,
   created_at TIMESTAMPTZ NOT NULL,
   expires_at TIMESTAMPTZ,
