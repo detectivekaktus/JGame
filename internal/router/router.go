@@ -15,6 +15,7 @@ func NewRouter() *mux.Router {
 	r.HandleFunc("/api/users/{id:[0-9]+}", handler.DeleteUser).Methods("DELETE")
 
 	r.HandleFunc("/api/login", handler.Login).Methods("POST")
+	r.HandleFunc("/api/logout", handler.Logout).Methods("POST")
 
 	return r
 }

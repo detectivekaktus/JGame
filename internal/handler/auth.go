@@ -20,10 +20,19 @@ import (
 )
 
 type Session struct {
-	Id        int
+	Id        string
 	UserId    int
 	CreatedAt time.Time
 	ExpiresAt time.Time
+}
+
+type LoginResponse struct {
+	Message string
+	User UnverifiedUserResponse
+}
+
+type LogoutResponse struct {
+	Message string
 }
 
 // Return the user session stored in the database. The session is retrieved
@@ -42,11 +51,30 @@ func getUserSession(conn *pgx.Conn, r *http.Request) (*Session, error) {
 		return nil, err
 	}
 
-	if time.Now().UTC().After(session.ExpiresAt) {
+	if time.Now().UTC().After(session.ExpiresAt.UTC()) {
 		return nil, err
 	}
 
 	return &session, nil
+}
+
+// Deletes the user session from the database and returns the updated
+// `session_id` cookie to send to the client.
+func deleteUserSession(conn *pgx.Conn, id string) (*http.Cookie, error) {
+	_, err := database.Execute(conn, "DELETE FROM users.user_session WHERE session_id = $1", id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &http.Cookie{
+		Name: "session_id",
+		Value: "",
+		Path: "/",
+		Expires: time.Unix(0, 0).UTC(),
+		HttpOnly: true,
+		Secure: true,
+		SameSite: http.SameSiteStrictMode,
+	}, nil
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -86,8 +114,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var hashedPassword string
-	err = database.QueryRow(conn, "SELECT user_id, password FROM users.\"user\" WHERE email = $1", user.Email).
-		Scan(&user.Id, &hashedPassword)
+	err = database.QueryRow(conn, "SELECT user_id, name, password FROM users.\"user\" WHERE email = $1", user.Email).
+		Scan(&user.Id, &user.Name, &hashedPassword)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
@@ -137,6 +165,50 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteStrictMode,
 	})
 
-	w.WriteHeader(http.StatusNoContent)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(LoginResponse{
+		Message: "Login successful",
+		User: UnverifiedUserResponse{
+			Id: user.Id,
+			Name: user.Name,
+		},
+	})
+}
+
+func Logout(w http.ResponseWriter, r *http.Request) {
+	if httputils.HasContent(r) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
+			"This endpoint does not accept a request body.")
+		return
+	}
+
+	conn := database.GetConnection()
+	defer conn.Close(context.Background())
+
+	session, err := getUserSession(conn, r)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not get the current user session for POST /api/logout: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Session retrieval error",
+			"Could not get the original session via cookie.")
+		return
+	}
+
+	cookie, err := deleteUserSession(conn, session.Id)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not delete the current user session for POST /api/logout: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Internal error",
+			"Could not delete the provided session.")
+		return
+	}
+
+	http.SetCookie(w, cookie)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(LogoutResponse{
+		Message: "Logout successful",
+	})
 }
 

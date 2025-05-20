@@ -182,7 +182,15 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := database.Execute(conn, "DELETE FROM users.\"user\" WHERE user_id = $1", id)
+	cookie, err := deleteUserSession(conn, session.Id)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not delete user session for DELETE /api/users/id: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not delete user session for the user with the given id.")
+		return
+	}
+
+	_, err = database.Execute(conn, "DELETE FROM users.\"user\" WHERE user_id = $1", id)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not delete user for DELETE /api/users/id: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
@@ -190,6 +198,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -263,6 +272,15 @@ func PutUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cookie, err := deleteUserSession(conn, session.Id)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not delete user session for PUT /api/users/id: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not update user session.")
+		return
+	}
+
+	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -331,7 +349,7 @@ func PatchUser(w http.ResponseWriter, r *http.Request) {
 		fieldsSb.WriteString(fmt.Sprintf("name = $%d", len(args)))
 	}
 
-	if strings.TrimSpace(user.Password) != "" {
+	if user.Password != "" {
 		if len(args) != 0 {
 			fieldsSb.WriteString(", ")
 		}
@@ -358,6 +376,19 @@ func PatchUser(w http.ResponseWriter, r *http.Request) {
 			"Could not update user.")
 		return
 	}
+
+	if user.Password != "" {
+		cookie, err := deleteUserSession(conn, session.Id)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Could not log out user for PATCH /api/users/id: %v\n", err)
+			httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+				"Could not update user.")
+			return
+		}
+
+		http.SetCookie(w, cookie)
+	}
 	
 	w.WriteHeader(http.StatusNoContent)
 }
+
