@@ -97,8 +97,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not process JSON body for POST /api/users: %v\n", err)
-		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+		httputil.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
 			"Could not process the body of the request.")
 		return
 	}
@@ -219,6 +218,80 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "Could not delete user for DELETE /api/users/id: %v\n", err)
 		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not delete user with the given id.")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// TODO: Make a PATCH alternative.
+func PutUser(w http.ResponseWriter, r *http.Request) {
+	if !httputil.IsContentType(w, r, "application/json") {
+		httputil.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
+			"Expected Content-Type to be application/json.")
+		return
+	}
+
+	if !httputil.HasContent(r) {
+		httputil.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
+			"Expected content inside the request body, got nothing.")
+		return
+	}
+
+	conn := database.GetConnection()
+	defer conn.Close(context.Background())
+
+	session, _ := getUserSession(conn, r)
+	if session == nil {
+		httputil.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
+			"Can't update user when not logged in.")
+		return
+	}
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	if int_id, _ := strconv.Atoi(id); session.UserId != int_id {
+		httputil.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			"Can't update user that is not themselves.")
+		return
+	}
+
+	var user User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		httputil.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Could not process the body of the request.")
+		return
+	}
+
+	if user.Id != 0 {
+		httputil.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Can't modify an id of a user.")
+		return
+	}
+
+	if user.Name == "" || user.Email == "" || user.Password == "" {
+		httputil.SendErrorMessage(w, http.StatusBadRequest, "Missing fields",
+			"name, email, and password fields must be specified on PUT request.")
+		return
+	}
+
+	hash, err := hashPassword(user.Password)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not generate password hash for PUT /api/users/id: %v\n", err)
+		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not process user password.")
+		return
+	}
+	user.Password = hash
+
+	_, err = database.Execute(conn, "UPDATE users.\"user\" SET name = $1, email = $2, password = $3 WHERE user_id = $4",
+		user.Name, user.Email, user.Password, id)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not update user for PUT /api/users/id: %v\n", err)
+		httputil.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not update user.")
 		return
 	}
 
