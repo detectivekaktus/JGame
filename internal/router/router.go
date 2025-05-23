@@ -17,6 +17,7 @@ func chainMiddlewares(h http.Handler, middlewares ...func(http.Handler)http.Hand
 
 func NewRouter() *mux.Router {
 	r := mux.NewRouter().PathPrefix("/api").Subrouter()
+	r.Use(middleware.CorsMiddleware)
 
 	// /api/users
 	r.Handle("/register",
@@ -42,21 +43,21 @@ func NewRouter() *mux.Router {
 	users := r.PathPrefix("/users").Subrouter()
 	users.Use(middleware.AuthMiddleware)
 
-	r.Handle("/me",
+	users.Handle("/me",
 		chainMiddlewares(http.HandlerFunc(handler.GetCurrentUser),
 			middleware.RejectBodyMiddleware)).
 		Methods("GET")
-	r.Handle("/me",
+	users.Handle("/me",
 		chainMiddlewares(http.HandlerFunc(handler.PutCurrentUser),
 			middleware.RequireBodyMiddleware,
 			middleware.RequireJsonContentMiddleware)).
 		Methods("PUT")
-	r.Handle("/me",
+	users.Handle("/me",
 		chainMiddlewares(http.HandlerFunc(handler.PatchCurrentUser),
 			middleware.RequireBodyMiddleware,
 			middleware.RequireJsonContentMiddleware)).
 		Methods("PATCH")
-	r.Handle("/me",
+	users.Handle("/me",
 		chainMiddlewares(http.HandlerFunc(handler.DeleteCurrentUser),
 			middleware.RejectBodyMiddleware)).
 		Methods("DELETE")

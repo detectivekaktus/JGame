@@ -12,6 +12,12 @@ import (
 	"github.com/detectivekaktus/JGame/internal/httputils"
 )
 
+// Establishes a connection to the database passed with the request via
+// context to the next handler. Retrieves the user session and checks:
+// 1. Does the session exist (both valid and invalid)?
+// 2. Is the session expired?
+// If any check fails, 403 Forbidden is returned back. The successfully
+// validated session is passed with the request context.
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn := database.GetConnection()
@@ -45,6 +51,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// The requests with this middleware will not be allowed if they have body.
 func RejectBodyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if httputils.HasContent(r) {
@@ -56,6 +63,7 @@ func RejectBodyMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// The requests with this middleware will not be allowed if they don't have body.
 func RequireBodyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !httputils.HasContent(r) {
@@ -67,6 +75,8 @@ func RequireBodyMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// The requests with this middleware will not be allowed if their Content-Type
+// isn't application/json
 func RequireJsonContentMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !httputils.IsContentType(w, r, "application/json") {
@@ -74,6 +84,33 @@ func RequireJsonContentMiddleware(next http.Handler) http.Handler {
 				"Expected Content-Type to be application/json.")
 			return
 		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+var AllowedCorsOrigins = map[string]bool {
+	"http://127.0.0.1:5173": true,
+	"http://localhost:5173": true,
+}
+
+// Sets up Cross-Origin Resource Sharing mechanism workarounds to accept requests
+// only from the frontend (localhost:5173).
+func CorsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
+		if AllowedCorsOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
