@@ -8,23 +8,54 @@ import (
 	"github.com/gorilla/mux"
 )
 
+func chainMiddlewares(h http.Handler, middlewares ...func(http.Handler)http.Handler) http.Handler {
+	for _, middleware := range middlewares {
+		h = middleware(h)
+	}
+	return h
+}
+
 func NewRouter() *mux.Router {
 	r := mux.NewRouter().PathPrefix("/api").Subrouter()
 
 	// /api/users
-	r.Handle("/register", middleware.RequireBodyMiddleware(http.HandlerFunc(handler.RegisterUser))).Methods("POST")
-	r.Handle("/login", middleware.RequireBodyMiddleware(http.HandlerFunc(handler.Login))).Methods("POST")
-	r.Handle("/logout", middleware.RejectBodyMiddleware(http.HandlerFunc(handler.Logout))).Methods("POST")
-	r.Handle("/users/{id:[0-9]+}", middleware.RejectBodyMiddleware(http.HandlerFunc(handler.GetUser))).Methods("GET")
+	r.Handle("/register",
+		chainMiddlewares(http.HandlerFunc(handler.RegisterUser),
+			middleware.RequireBodyMiddleware)).
+		Methods("POST")
+	r.Handle("/login",
+		chainMiddlewares(http.HandlerFunc(handler.Login),
+			middleware.RequireBodyMiddleware)).
+		Methods("POST")
+	r.Handle("/logout",
+		chainMiddlewares(http.HandlerFunc(handler.Logout),
+			middleware.RejectBodyMiddleware)).
+		Methods("POST")
+	r.Handle("/users/{id:[0-9]+}",
+		chainMiddlewares(http.HandlerFunc(handler.GetUser),
+			middleware.RejectBodyMiddleware)).
+		Methods("GET")
 
 	// /api/users
 	users := r.PathPrefix("/users").Subrouter()
 	users.Use(middleware.AuthMiddleware)
 
-	users.Handle("/me", middleware.RejectBodyMiddleware(http.HandlerFunc(handler.GetCurrentUser))).Methods("GET")
-	users.Handle("/me", middleware.RequireBodyMiddleware(http.HandlerFunc(handler.PutCurrentUser))).Methods("PUT")
-	users.Handle("/me", middleware.RequireBodyMiddleware(http.HandlerFunc(handler.PatchCurrentUser))).Methods("PATCH")
-	users.Handle("/me", middleware.RejectBodyMiddleware(http.HandlerFunc(handler.DeleteCurrentUser))).Methods("DELETE")
+	r.Handle("/me",
+		chainMiddlewares(http.HandlerFunc(handler.GetCurrentUser),
+			middleware.RejectBodyMiddleware)).
+		Methods("GET")
+	r.Handle("/me",
+		chainMiddlewares(http.HandlerFunc(handler.PutCurrentUser),
+			middleware.RequireBodyMiddleware)).
+		Methods("PUT")
+	r.Handle("/me",
+		chainMiddlewares(http.HandlerFunc(handler.PatchCurrentUser),
+			middleware.RequireBodyMiddleware)).
+		Methods("PATCH")
+	r.Handle("/me",
+		chainMiddlewares(http.HandlerFunc(handler.DeleteCurrentUser),
+			middleware.RejectBodyMiddleware)).
+		Methods("DELETE")
 
 	return r
 }
