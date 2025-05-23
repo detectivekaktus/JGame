@@ -44,3 +44,26 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func RejectBodyMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if httputils.HasContent(r) {
+			httputils.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
+				"This endpoint does not accept a request body.")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func RequireBodyMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !httputils.HasContent(r) {
+			httputils.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
+				"Expected content inside the request body, got nothing.")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+

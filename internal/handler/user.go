@@ -48,12 +48,6 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !httputils.HasContent(r) {
-		httputils.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
-			"Expected content inside the request body, got nothing.")
-		return
-	}
-
 	conn := database.GetConnection()
 	defer conn.Close(context.Background())
 
@@ -132,12 +126,6 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
-	if httputils.HasContent(r) {
-		httputils.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
-			"This endpoint does not accept a request body.")
-		return
-	}
-
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -170,12 +158,6 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteCurrentUser(w http.ResponseWriter, r *http.Request) {
-	if httputils.HasContent(r) {
-		httputils.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
-			"This endpoint does not accept a request body.")
-		return
-	}
-
 	conn := r.Context().Value("db_connection").(*pgx.Conn)
 	session := r.Context().Value("session").(*Session)
 
@@ -203,12 +185,6 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 	if !httputils.IsContentType(w, r, "application/json") {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
 			"Expected Content-Type to be application/json.")
-		return
-	}
-
-	if !httputils.HasContent(r) {
-		httputils.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
-			"Expected content inside the request body, got nothing.")
 		return
 	}
 
@@ -269,12 +245,6 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 	if !httputils.IsContentType(w, r, "application/json") {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
 			"Expected Content-Type to be application/json.")
-		return
-	}
-
-	if !httputils.HasContent(r) {
-		httputils.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
-			"Expected content inside the request body, got nothing.")
 		return
 	}
 

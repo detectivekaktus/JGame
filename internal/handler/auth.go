@@ -84,12 +84,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !httputils.HasContent(r) {
-		httputils.SendErrorMessage(w, http.StatusBadRequest, "No content provided",
-			"Expected content inside the request body, got nothing.")
-		return
-	}
-
 	conn := database.GetConnection()
 	defer conn.Close(context.Background())
 
@@ -172,12 +166,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
-	if httputils.HasContent(r) {
-		httputils.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
-			"This endpoint does not accept a request body.")
-		return
-	}
-
 	conn := database.GetConnection()
 	defer conn.Close(context.Background())
 
