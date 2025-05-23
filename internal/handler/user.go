@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/detectivekaktus/JGame/internal/database"
 	"github.com/detectivekaktus/JGame/internal/httputils"
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -56,12 +56,6 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	conn := database.GetConnection()
 	defer conn.Close(context.Background())
-
-	if session, _ := getUserSession(conn, r); session != nil {
-		httputils.SendErrorMessage(w, http.StatusForbidden, "Authentication error",
-			"Cannot POST a user while logged in.")
-		return
-	}
 
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -108,7 +102,33 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
+	if httputils.HasContent(r) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
+			"This endpoint does not accept a request body.")
+		return
+	}
 
+	conn := r.Context().Value("db_connection").(*pgx.Conn)
+	session := r.Context().Value("session").(*Session)
+
+	var user User
+	err := database.QueryRow(conn, "SELECT user_id, email, name FROM users.\"user\" WHERE user_id = $1", session.UserId).
+		Scan(&user.Id, &user.Email, &user.Name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not get logged in user for GET /api/users/me: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not get the user.")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(VerifiedUserResponse{
+		Id: user.Id,
+		Name: user.Name,
+		Email: user.Email,
+	})
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
@@ -125,8 +145,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close(context.Background())
 
 	var user User
-	err := database.QueryRow(conn, "SELECT user_id, email, name FROM users.\"user\" WHERE user_id = $1", id).
-		Scan(&user.Id, &user.Email, &user.Name)
+	err := database.QueryRow(conn, "SELECT user_id, name FROM users.\"user\" WHERE user_id = $1", id).
+		Scan(&user.Id, &user.Name)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			httputils.SendErrorMessage(w, http.StatusNotFound, "Not found",
@@ -143,17 +163,6 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	if session, _ := getUserSession(conn, r); session != nil {
-		if session.UserId == user.Id {
-			json.NewEncoder(w).Encode(VerifiedUserResponse{
-				Id: user.Id,
-				Email: user.Email,
-				Name: user.Name,
-			})
-			return
-		}
-	}
-
 	json.NewEncoder(w).Encode(UnverifiedUserResponse{
 		Id: user.Id,
 		Name: user.Name,
@@ -167,24 +176,8 @@ func DeleteCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn := database.GetConnection()
-	defer conn.Close(context.Background())
-
-	session, _ := getUserSession(conn, r)
-	if session == nil {
-		httputils.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
-			"Can't delete user when not logged in.")
-		return
-	}
-
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	if int_id, _ := strconv.Atoi(id); session.UserId != int_id {
-		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
-			"Can't delete user that is not themselves.")
-		return
-	}
+	conn := r.Context().Value("db_connection").(*pgx.Conn)
+	session := r.Context().Value("session").(*Session)
 
 	cookie, err := deleteUserSession(conn, session.Id)
 	if err != nil {
@@ -194,7 +187,7 @@ func DeleteCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = database.Execute(conn, "DELETE FROM users.\"user\" WHERE user_id = $1", id)
+	_, err = database.Execute(conn, "DELETE FROM users.\"user\" WHERE user_id = $1", session.UserId)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not delete user for DELETE /api/users/id: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
@@ -219,24 +212,8 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn := database.GetConnection()
-	defer conn.Close(context.Background())
-
-	session, _ := getUserSession(conn, r)
-	if session == nil {
-		httputils.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
-			"Can't update user when not logged in.")
-		return
-	}
-
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	if int_id, _ := strconv.Atoi(id); session.UserId != int_id {
-		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
-			"Can't update user that is not themselves.")
-		return
-	}
+	conn := r.Context().Value("db_connection").(*pgx.Conn)
+	session := r.Context().Value("session").(*Session)
 
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -268,7 +245,7 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 	user.Password = hash
 
 	_, err = database.Execute(conn, "UPDATE users.\"user\" SET name = $1, email = $2, password = $3 WHERE user_id = $4",
-		user.Name, user.Email, user.Password, id)
+		user.Name, user.Email, user.Password, session.UserId)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not update user for PUT /api/users/id: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
@@ -301,24 +278,8 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn := database.GetConnection()
-	defer conn.Close(context.Background())
-
-	session, _ := getUserSession(conn, r)
-	if session == nil {
-		httputils.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
-			"Can't update user when not logged in.")
-		return
-	}
-
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	if int_id, _ := strconv.Atoi(id); session.UserId != int_id {
-		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
-			"Can't update user that is not themselves.")
-		return
-	}
+	conn := r.Context().Value("db_connection").(*pgx.Conn)
+	session := r.Context().Value("session").(*Session)
 
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -370,7 +331,7 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 		args = append(args, user.Password)
 		fieldsSb.WriteString(fmt.Sprintf("password = $%d", len(args)))
 	}
-	args = append(args, id)
+	args = append(args, session.UserId)
 	fieldsSb.WriteString(fmt.Sprintf(" WHERE user_id = $%d", len(args)))
 
 	_, err = database.Execute(conn, fieldsSb.String(), args...)

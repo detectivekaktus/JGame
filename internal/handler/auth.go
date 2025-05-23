@@ -38,7 +38,7 @@ type LogoutResponse struct {
 // Return the user session stored in the database. The session is retrieved
 // via `session_id` cookie attached to the request. If the cookie is not set
 // nil is returned. If the session expired nil is returned.
-func getUserSession(conn *pgx.Conn, r *http.Request) (*Session, error) {
+func GetUserSession(conn *pgx.Conn, r *http.Request) (*Session, error) {
 	session_cookie, err := r.Cookie("session_id")
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func getUserSession(conn *pgx.Conn, r *http.Request) (*Session, error) {
 	}
 
 	if time.Now().UTC().After(session.ExpiresAt.UTC()) {
-		return nil, err
+		return nil, errors.New("session expired")
 	}
 
 	return &session, nil
@@ -92,12 +92,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	conn := database.GetConnection()
 	defer conn.Close(context.Background())
-
-	if session, _ := getUserSession(conn, r); session != nil {
-		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
-			"Can't log in when already logged in.")
-		return
-	}
 
 	var user User
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -187,7 +181,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	conn := database.GetConnection()
 	defer conn.Close(context.Background())
 
-	session, err := getUserSession(conn, r)
+	session, err := GetUserSession(conn, r)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not get the current user session for POST /api/logout: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Session retrieval error",
