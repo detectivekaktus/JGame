@@ -41,7 +41,7 @@ func hashPassword(passwd string) (string, error) {
 	return string(hash), err
 }
 
-func PostUser(w http.ResponseWriter, r *http.Request) {
+func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	if !httputils.IsContentType(w, r, "application/json") {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
 			"Expected Content-Type to be application/json.")
@@ -107,6 +107,10 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	if httputils.HasContent(r) {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
@@ -156,7 +160,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func DeleteUser(w http.ResponseWriter, r *http.Request) {
+func DeleteCurrentUser(w http.ResponseWriter, r *http.Request) {
 	if httputils.HasContent(r) {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
 			"This endpoint does not accept a request body.")
@@ -202,7 +206,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func PutUser(w http.ResponseWriter, r *http.Request) {
+func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 	if !httputils.IsContentType(w, r, "application/json") {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
 			"Expected Content-Type to be application/json.")
@@ -284,7 +288,7 @@ func PutUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func PatchUser(w http.ResponseWriter, r *http.Request) {
+func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 	if !httputils.IsContentType(w, r, "application/json") {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
 			"Expected Content-Type to be application/json.")
