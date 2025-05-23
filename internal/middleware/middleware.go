@@ -67,3 +67,13 @@ func RequireBodyMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func RequireJsonContentMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !httputils.IsContentType(w, r, "application/json") {
+			httputils.SendErrorMessage(w, http.StatusBadRequest, "Content-Type mismatch",
+				"Expected Content-Type to be application/json.")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
