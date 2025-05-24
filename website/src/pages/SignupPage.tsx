@@ -1,16 +1,19 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Footer } from "../components/Footer"
 import { SignUpForm } from "../types/user";
 import "../css/Form.css"
+import { BASE_API_URL } from "../utils/consts";
 
 export function SignupPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const data = new FormData(e.currentTarget);
+    const target: HTMLFormElement = e.currentTarget;
+    const data = new FormData(target);
     const userForm: SignUpForm = {
       name: data.get("name") as string,
       email: data.get("email") as string,
@@ -47,8 +50,25 @@ export function SignupPage() {
       return;
     }
 
-    e.currentTarget.reset()
-    setErrors({});
+    const res = await fetch(`${BASE_API_URL}/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: userForm.name,
+        email: userForm.email,
+        password: userForm.password
+      })
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json()
+      console.error(`Got ${res.status} response while registering the user: ${errJson["error"]} ${errJson["message"]}`)
+      return;
+    }
+
+    navigate("/auth/login");
   };
 
   return (

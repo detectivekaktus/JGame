@@ -19,27 +19,25 @@ func NewRouter() *mux.Router {
 	r := mux.NewRouter().PathPrefix("/api").Subrouter()
 	r.Use(middleware.CorsMiddleware)
 
-	// /api/users
 	r.Handle("/register",
 		chainMiddlewares(http.HandlerFunc(handler.RegisterUser),
 			middleware.RequireBodyMiddleware,
 			middleware.RequireJsonContentMiddleware)).
-		Methods("POST")
+		Methods("POST", "OPTIONS")
 	r.Handle("/login",
 		chainMiddlewares(http.HandlerFunc(handler.Login),
 			middleware.RequireBodyMiddleware,
 			middleware.RequireJsonContentMiddleware)).
-		Methods("POST")
+		Methods("POST", "OPTIONS")
 	r.Handle("/logout",
 		chainMiddlewares(http.HandlerFunc(handler.Logout),
 			middleware.RejectBodyMiddleware)).
-		Methods("POST")
+		Methods("POST", "OPTIONS")
 	r.Handle("/users/{id:[0-9]+}",
 		chainMiddlewares(http.HandlerFunc(handler.GetUser),
 			middleware.RejectBodyMiddleware)).
 		Methods("GET")
 
-	// /api/users
 	users := r.PathPrefix("/users").Subrouter()
 	users.Use(middleware.AuthMiddleware)
 
@@ -51,16 +49,16 @@ func NewRouter() *mux.Router {
 		chainMiddlewares(http.HandlerFunc(handler.PutCurrentUser),
 			middleware.RequireBodyMiddleware,
 			middleware.RequireJsonContentMiddleware)).
-		Methods("PUT")
+		Methods("PUT", "OPTIONS")
 	users.Handle("/me",
 		chainMiddlewares(http.HandlerFunc(handler.PatchCurrentUser),
 			middleware.RequireBodyMiddleware,
 			middleware.RequireJsonContentMiddleware)).
-		Methods("PATCH")
+		Methods("PATCH", "OPTIONS")
 	users.Handle("/me",
 		chainMiddlewares(http.HandlerFunc(handler.DeleteCurrentUser),
 			middleware.RejectBodyMiddleware)).
-		Methods("DELETE")
+		Methods("DELETE", "OPTIONS")
 
 	return r
 }
