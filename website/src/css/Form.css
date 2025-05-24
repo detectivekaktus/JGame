@@ -42,6 +42,11 @@
   border: 1px solid var(--clr-accent-600);
 }
 
+.form-error {
+  color: red;
+  font-size: var(--fs-400);
+}
+
 @media (min-width: 50em) {
   .auth-two-col {
     grid-template-columns: 1fr 1fr;

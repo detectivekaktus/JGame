@@ -41,12 +41,6 @@ func hashPassword(passwd string) (string, error) {
 }
 
 func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	if httputils.HasContent(r) {
-		httputils.SendErrorMessage(w, http.StatusBadRequest, "Request body not allowed",
-			"This endpoint does not accept a request body.")
-		return
-	}
-
 	conn := r.Context().Value("db_connection").(*pgx.Conn)
 	session := r.Context().Value("session").(*Session)
 
