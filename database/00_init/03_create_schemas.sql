@@ -1,6 +1,2 @@
-DO $$
-BEGIN
-  CREATE SCHEMA users;
-  CREATE SCHEMA packs;
-END
-$$;
+CREATE SCHEMA users;
+CREATE SCHEMA packs;
