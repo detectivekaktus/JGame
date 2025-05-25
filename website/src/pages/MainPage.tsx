@@ -1,8 +1,24 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
+import { BASE_API_URL } from "../utils/consts";
 import "../css/MainPage.css"
 
 export function MainPage() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetch(`${BASE_API_URL}/users/me`, { credentials: "include" })
+      .then(res => {
+        if (!res.ok && (res.status === 401 || res.status === 403))
+          navigate("/")
+        else
+          console.error(`Got unexpected response: ${res.status}`)
+      })
+      .catch(err => console.error(err))
+  }, [])
+
   return (
     <div className="page-wrapper">
       <Header />

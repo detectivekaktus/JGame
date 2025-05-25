@@ -1,13 +1,27 @@
-import { Link } from "react-router-dom"
+import { useEffect } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import { Footer } from "../components/Footer"
 import { Header } from "../components/Header"
 import { HomeCard } from "../components/HomeCard"
 import { RoomCard } from "../components/RoomCard"
 import { StatBadge, StatBadgeColor } from "../components/StatBadge"
+import { BASE_API_URL } from "../utils/consts"
 import "../css/Home.css"
 
-
 export function HomePage() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetch(`${BASE_API_URL}/users/me`, { credentials: "include" })
+      .then(res => {
+        if (res.ok)
+          navigate("/main")
+        else if (res.status !== 401 && res.status !== 403)
+          console.error(`Unexpected response: ${res.status}`)
+      })
+      .catch(err => console.error(err))
+  }, []);
+
   return (
     <>
       <Header />
