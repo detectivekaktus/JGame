@@ -16,8 +16,6 @@ import (
 // context to the next handler. Retrieves the user session and checks:
 // 1. Does the session exist (both valid and invalid)?
 // 2. Is the session expired?
-// If any check fails, 403 Forbidden is returned back. The successfully
-// validated session is passed with the request context.
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn := database.GetConnection()
@@ -26,15 +24,17 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		session, err := handler.GetUserSession(conn, r)
 		if err != nil {
 			if errors.Is(http.ErrNoCookie, err) {
-				httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+				httputils.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
 					"You must be logged in to perform this action.")
 				return
 			} else if err.Error() == "session expired" {
+				cookie, _ := handler.DeleteUserSession(conn, session.Id)
+				http.SetCookie(w, cookie)
 				httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
 					"Your session has expired.")
 				return
 			} else if err.Error() == "no rows in result set" {
-				httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+				httputils.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
 					"Invalid session id.")
 				return
 			}

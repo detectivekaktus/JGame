@@ -61,7 +61,7 @@ func GetUserSession(conn *pgx.Conn, r *http.Request) (*Session, error) {
 
 // Deletes the user session from the database and returns the updated
 // `session_id` cookie to send to the client.
-func deleteUserSession(conn *pgx.Conn, id string) (*http.Cookie, error) {
+func DeleteUserSession(conn *pgx.Conn, id string) (*http.Cookie, error) {
 	_, err := database.Execute(conn, "DELETE FROM users.user_session WHERE session_id = $1", id)
 	if err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Scan(&user.Id, &user.Name, &hashedPassword)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			httputils.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
 				"Invalid email credential.")
 			return
 		}
@@ -161,7 +161,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(user.Password)); err != nil {
-		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+		httputils.SendErrorMessage(w, http.StatusUnauthorized, "Unauthorized",
 			"Invalid password credential.")
 		return
 	}
