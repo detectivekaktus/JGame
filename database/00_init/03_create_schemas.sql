@@ -1,0 +1,6 @@
+DO $$
+BEGIN
+  CREATE SCHEMA users;
+  CREATE SCHEMA packs;
+END
+$$;

@@ -1,0 +1,6 @@
+DO $$
+BEGIN
+  CREATE ROLE jgame_owner WITH LOGIN INHERIT;
+  CREATE ROLE jgame_backend WITH LOGIN INHERIT;
+END
+$$;
