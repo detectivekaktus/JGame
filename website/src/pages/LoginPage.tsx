@@ -48,8 +48,18 @@ export function LoginPage() {
     });
 
     if (!res.ok) {
-      const err = await res.json();
-      console.error(`Got ${res.status} response while loging in the user: ${err["error"]} ${err["message"]}`);
+      switch (res.status) {
+        case 500: {
+          errors.req = "There was an error on the server. Please, try again later."
+        } break;
+        case 401: {
+          errors.req = "Invalid combination of email and password. Double-check both fields and try again."
+        } break;
+        default: {
+          errors.req = "There was an error on the server. Please, try again later."
+        }
+      }
+      setErrors(errors)
       return;
     }
 
@@ -65,16 +75,17 @@ export function LoginPage() {
           </div>
           <div className="auth-two-col-form">
             <h2>Log in</h2>
+            { errors.req && <div className="form-error">{errors.req}</div> }
             <form onSubmit={handleSubmit} noValidate>
               <div className="form-entry">
                 <label htmlFor="email">Email</label>
                 <input required id="email" name="email" type="email" />
-                { errors.email && <div className="form-error">{errors.email}</div> }
+                { errors.email && <div className="form-entry-error">{errors.email}</div> }
               </div>
               <div className="form-entry">
                 <label htmlFor="password">Password</label>
                 <input required id="password" name="password" type="password" />
-                { errors.password && <div className="form-error">{errors.password}</div> }
+                { errors.password && <div className="form-entry-error">{errors.password}</div> }
               </div>
               <button type="submit" className="button stretch">Log in</button>
             </form>

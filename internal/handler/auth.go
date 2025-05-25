@@ -221,7 +221,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := deleteUserSession(conn, session.Id)
+	cookie, err := DeleteUserSession(conn, session.Id)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not delete the current user session for POST /api/logout: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Internal error",

@@ -43,6 +43,12 @@
 }
 
 .form-error {
+  padding: 1rem;
+  background-color: var(--clr-accent-300);
+  color: var(--clr-neutral-100);
+}
+
+.form-entry-error {
   color: red;
   font-size: var(--fs-400);
 }

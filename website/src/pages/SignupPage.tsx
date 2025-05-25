@@ -5,8 +5,6 @@ import { SignupForm } from "../types/user";
 import "../css/Form.css"
 import { BASE_API_URL } from "../utils/consts";
 
-// TODO: Show proper error message to the user in case of not being able
-// to signup.
 export function SignupPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
@@ -65,12 +63,22 @@ export function SignupPage() {
     });
 
     if (!res.ok) {
-      const err = await res.json()
-      console.error(`Got ${res.status} response while registering the user: ${err["error"]} ${err["message"]}`)
+      switch (res.status) {
+        case 500: {
+          errors.req = "There was an error on the server. Please, try again later."
+        } break;
+        case 409: {
+          errors.req = "User with this email address already exists. Please, log in."
+        } break;
+        default: {
+          errors.req = "There was an error on the server. Please, try again later."
+        }
+      }
+      setErrors(errors)
       return;
     }
-
-    navigate("/auth/login");
+    else
+      navigate("/auth/login");
   };
 
   return (
@@ -82,26 +90,27 @@ export function SignupPage() {
           </div>
           <div className="auth-two-col-form">
             <h2>Sign up</h2>
+            { errors.req && <div className="form-error">{errors.req}</div> }
             <form onSubmit={handleSubmit} noValidate>
               <div className="form-entry">
                 <label htmlFor="name">Display name</label>
                 <input required id="name" name="name" type="text" />
-                { errors.name && <div className="form-error">{errors.name}</div> }
+                { errors.name && <div className="form-entry-error">{errors.name}</div> }
               </div>
               <div className="form-entry">
                 <label htmlFor="email">Email</label>
                 <input required id="email" name="email" type="email" />
-                { errors.email && <div className="form-error">{errors.email}</div> }
+                { errors.email && <div className="form-entry-error">{errors.email}</div> }
               </div>
               <div className="form-entry">
                 <label htmlFor="password">Password</label>
                 <input required id="password" name="password" type="password" />
-                { errors.password && <div className="form-error">{errors.password}</div> }
+                { errors.password && <div className="form-entry-error">{errors.password}</div> }
               </div>
               <div className="form-entry">
                 <label htmlFor="confirm-password">Repeat password</label>
                 <input required id="confirm-password" name="confirm-password" type="password" />
-                { errors.confirm_password && <div className="form-error">{errors.confirm_password}</div> }
+                { errors.confirm_password && <div className="form-entry-error">{errors.confirm_password}</div> }
               </div>
               <button type="submit" className="button stretch" >Sign up</button>
             </form>

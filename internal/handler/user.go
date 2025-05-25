@@ -100,7 +100,7 @@ func DeleteCurrentUser(w http.ResponseWriter, r *http.Request) {
 	conn := r.Context().Value("db_connection").(*pgx.Conn)
 	session := r.Context().Value("session").(*Session)
 
-	cookie, err := deleteUserSession(conn, session.Id)
+	cookie, err := DeleteUserSession(conn, session.Id)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not delete user session for DELETE /api/users/id: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
@@ -162,7 +162,7 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := deleteUserSession(conn, session.Id)
+	cookie, err := DeleteUserSession(conn, session.Id)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not delete user session for PUT /api/users/id: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
@@ -240,7 +240,7 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user.Password != "" {
-		cookie, err := deleteUserSession(conn, session.Id)
+		cookie, err := DeleteUserSession(conn, session.Id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Could not log out user for PATCH /api/users/id: %v\n", err)
 			httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
