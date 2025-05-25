@@ -74,7 +74,8 @@ func deleteUserSession(conn *pgx.Conn, id string) (*http.Cookie, error) {
 		Expires: time.Unix(0, 0).UTC(),
 		HttpOnly: true,
 		Secure: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode,
+		Partitioned: true,
 	}, nil
 }
 
@@ -124,7 +125,6 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		Email: user.Email,
 	})
 }
-
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	conn := database.GetConnection()
@@ -193,7 +193,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Expires: expires,
 		HttpOnly: true,
 		Secure: true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode,
+		Partitioned: true,
 	})
 
 	w.Header().Set("Content-Type", "application/json")

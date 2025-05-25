@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Footer } from "../components/Footer"
-import { SignUpForm } from "../types/user";
+import { SignupForm } from "../types/user";
 import "../css/Form.css"
 import { BASE_API_URL } from "../utils/consts";
 
+// TODO: Show proper error message to the user in case of not being able
+// to signup.
 export function SignupPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
@@ -14,7 +16,7 @@ export function SignupPage() {
 
     const target: HTMLFormElement = e.currentTarget;
     const data = new FormData(target);
-    const userForm: SignUpForm = {
+    const userForm: SignupForm = {
       name: data.get("name") as string,
       email: data.get("email") as string,
       password: data.get("password") as string,
@@ -63,8 +65,8 @@ export function SignupPage() {
     });
 
     if (!res.ok) {
-      const errJson = await res.json()
-      console.error(`Got ${res.status} response while registering the user: ${errJson["error"]} ${errJson["message"]}`)
+      const err = await res.json()
+      console.error(`Got ${res.status} response while registering the user: ${err["error"]} ${err["message"]}`)
       return;
     }
 
