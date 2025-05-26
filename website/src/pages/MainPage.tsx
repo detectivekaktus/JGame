@@ -11,7 +11,9 @@ export function MainPage() {
   useEffect(() => {
     fetch(`${BASE_API_URL}/users/me`, { credentials: "include" })
       .then(res => {
-        if (!res.ok && (res.status === 401 || res.status === 403))
+        if (res.ok)
+          return
+        else if (res.status === 401 || res.status === 403)
           navigate("/")
         else
           console.error(`Got unexpected response: ${res.status}`)
