@@ -28,12 +28,12 @@ type Session struct {
 }
 
 type LoginResponse struct {
-	Message string
-	User UnverifiedUserResponse
+	Message string	`json:"message"`
+	User VerifiedUserResponse `json:"user"`
 }
 
 type LogoutResponse struct {
-	Message string
+	Message string `json:"message"`
 }
 
 // Return the user session stored in the database. The session is retrieved
@@ -202,9 +202,10 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(LoginResponse{
 		Message: "Login successful",
-		User: UnverifiedUserResponse{
+		User: VerifiedUserResponse{
 			Id: user.Id,
 			Name: user.Name,
+			Email: user.Email,
 		},
 	})
 }

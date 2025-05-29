@@ -1,15 +1,21 @@
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Footer } from "../components/Footer"
 import { LoginForm } from "../types/user";
-import "../css/Form.css"
 import { BASE_API_URL } from "../utils/consts";
+import { MeContext } from "../context/MeProvider";
+import "../css/Form.css"
 
-// TODO: Report proper error messages when trying to login (no such email,
-// invalid password, etc.)
 export function LoginPage() {
+  const { me, setMe } = useContext(MeContext);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (me)
+      navigate("/main");
+  }, [me]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -63,6 +69,7 @@ export function LoginPage() {
       return;
     }
 
+    setMe((await res.json())["user"]);
     navigate("/main");
   };
 

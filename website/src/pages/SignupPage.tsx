@@ -1,13 +1,21 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Footer } from "../components/Footer"
 import { SignupForm } from "../types/user";
-import "../css/Form.css"
 import { BASE_API_URL } from "../utils/consts";
+import { MeContext } from "../context/MeProvider";
+import "../css/Form.css"
 
 export function SignupPage() {
+  const { me } = useContext(MeContext);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (me)
+      navigate("/main");
+  }, [me]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
