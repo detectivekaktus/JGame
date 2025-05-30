@@ -13,7 +13,7 @@ export function Button({ stretch, dim, type, className, disabled, onClick, child
   return (
     <button
       onClick={onClick}
-      className={`button ${stretch ? "stretch" : ""} ${className}`}
+      className={`button ${stretch ? "stretch" : ""} ${className ? className : ""}`}
       datatype={dim ? "dim" : ""}
       type={type}
       disabled={disabled}>
