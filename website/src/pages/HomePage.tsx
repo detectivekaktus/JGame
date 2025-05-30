@@ -9,13 +9,16 @@ import { MeContext } from "../context/MeProvider"
 import "../css/Home.css"
 
 export function HomePage() {
-  const { me } = useContext(MeContext);
+  const { me, loadingMe } = useContext(MeContext);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (loadingMe)
+      return;
+
     if (me)
       navigate("/main");
-  }, [me]);
+  }, [me, loadingMe]);
 
   return (
     <>

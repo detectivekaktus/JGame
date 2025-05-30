@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useContext, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import { StatBadge, StatBadgeColor } from "../components/StatBadge";
 import { BASE_API_URL } from "../utils/consts";
 import { User } from "../types/user";
+import { MeContext } from "../context/MeProvider";
 import { NotFoundPage } from "./NotFoundPage";
 import "../css/ProfilePage.css"
 
@@ -13,19 +14,36 @@ type ProfileParams = {
 }
 
 export function ProfilePage() {
+  const { me, loadingMe } = useContext(MeContext);
+
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [found, setFound] = useState(false);
 
   const { id } = useParams<ProfileParams>();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    if (loadingMe)
+      return;
+
+    if (!me) {
+      navigate("/auth/login");
+      return;
+    }
+
+    if (me.id === Number(id)) {
+      setFound(true);
+      setLoading(false);
+      setUser({ id: me.id, name: me.name });
+      return;
+    }
+
     fetch(`${BASE_API_URL}/users/${id}`)
       .then(res => {
         if (res.ok)
           return res.json();
         else if (res.status === 404) {
-          setFound(false);
           return null;
         }
         throw new Error(`Unexpected error during user fetch: ${res.status}`);
@@ -38,7 +56,7 @@ export function ProfilePage() {
       })
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [id, me, loadingMe]);
 
   if (loading)
     return <h1>Loading...</h1>

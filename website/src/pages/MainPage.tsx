@@ -6,13 +6,16 @@ import { MeContext } from "../context/MeProvider";
 import "../css/MainPage.css"
 
 export function MainPage() {
-  const { me } = useContext(MeContext);
+  const { me, loadingMe } = useContext(MeContext);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (loadingMe)
+      return;
+
     if (!me)
       navigate("/");
-  }, [me])
+  }, [me, loadingMe])
 
   return (
     <div className="page-wrapper">

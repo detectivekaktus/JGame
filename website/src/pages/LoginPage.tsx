@@ -7,15 +7,18 @@ import { MeContext } from "../context/MeProvider";
 import "../css/Form.css"
 
 export function LoginPage() {
-  const { me, setMe } = useContext(MeContext);
+  const { me, setMe, loadingMe } = useContext(MeContext);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (loadingMe)
+      return;
+
     if (me)
       navigate("/main");
-  }, [me]);
+  }, [me, loadingMe]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

@@ -5,15 +5,18 @@ import { BASE_API_URL } from "../utils/consts";
 interface MeContextType {
   me: Me | null
   setMe: React.Dispatch<React.SetStateAction<Me | null>>
+  loadingMe: boolean
 }
 
 export const MeContext = createContext<MeContextType>({
   me: null,
-  setMe: () => {}
+  setMe: () => {},
+  loadingMe: true
 });
 
 export function MeProvider({ children }: { children: React.ReactNode }) {
   const [me, setMe] = useState<Me | null>(null);
+  const [loadingMe, setLoadingMe] = useState(true);
 
   useEffect(() => {
     fetch(`${BASE_API_URL}/users/me`, { credentials: "include" })
@@ -26,11 +29,12 @@ export function MeProvider({ children }: { children: React.ReactNode }) {
           throw new Error(`Unexpected error during current user fetch: ${res.status}`);
       })
       .then(data => data ? setMe(data) : {})
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setLoadingMe(false));
   }, []);
 
   return (
-    <MeContext.Provider value={{ me, setMe }}>
+    <MeContext.Provider value={{ me, setMe, loadingMe }}>
       {children}
     </MeContext.Provider>
   );
