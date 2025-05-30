@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import { MeContext } from "../context/MeProvider";
-import { Spinner } from "../components/Spinner";
+import { LoadingPage } from "./LoadingPage";
+import { Button } from "../components/Button";
 import "../css/MainPage.css"
 
 export function MainPage() {
@@ -19,13 +20,7 @@ export function MainPage() {
   }, [me, loadingMe])
 
   if (loadingMe)
-    return (
-      <div className="page-wrapper">
-        <div className="page content">
-          <Spinner />
-        </div>
-      </div>
-    );
+    return <LoadingPage />
 
   return (
     <div className="page-wrapper">
@@ -51,12 +46,12 @@ export function MainPage() {
                       <li>Room type: </li>
                       <li>Players in room: </li>
                       <li>Quiz pack: </li>
-                      <li><button className="button stretch" datatype="dim">Join</button></li>
+                      <li><Button stretch={true} dim={true} >Join</Button></li>
                     </ul>
                   </div>
               }
             </div>
-            <button className="button stretch">Create room</button>
+            <Button stretch={true} dim={false} >Create room</Button>
           </div>
         </div>
       </main>

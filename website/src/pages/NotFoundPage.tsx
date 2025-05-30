@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import "../css/NotFoundPage.css"
+import { Button } from "../components/Button";
 
 export function NotFoundPage() {
   const navigate = useNavigate();
@@ -11,7 +12,7 @@ export function NotFoundPage() {
       <div className="page content">
         <h1>404 Not Found</h1>
         <p>It looks like you're lost 🤔</p>
-        <button className="button" onClick={() => navigate(-1)}>Go back</button>
+        <Button stretch={false} dim={false} onClick={() => navigate(-1)}>Go back</Button>
       </div>
       <Footer />
     </div>

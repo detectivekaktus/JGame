@@ -7,7 +7,7 @@ import { BASE_API_URL } from "../utils/consts";
 import { User } from "../types/user";
 import { MeContext } from "../context/MeProvider";
 import { NotFoundPage } from "./NotFoundPage";
-import { Spinner } from "../components/Spinner";
+import { LoadingPage } from "./LoadingPage";
 import "../css/ProfilePage.css"
 
 type ProfileParams = {
@@ -60,13 +60,7 @@ export function ProfilePage() {
   }, [id, me, loadingMe]);
 
   if (loadingMe || loading)
-    return (
-      <div className="page-wrapper">
-        <div className="page content">
-          <Spinner />
-        </div>
-      </div>
-    );
+    return <LoadingPage />
 
   if (!found)
     return <NotFoundPage />

@@ -6,7 +6,8 @@ import { HomeCard } from "../components/HomeCard"
 import { RoomCard } from "../components/RoomCard"
 import { StatBadge, StatBadgeColor } from "../components/StatBadge"
 import { MeContext } from "../context/MeProvider"
-import { Spinner } from "../components/Spinner"
+import { LoadingPage } from "./LoadingPage"
+import { Button } from "../components/Button"
 import "../css/Home.css"
 
 export function HomePage() {
@@ -22,13 +23,7 @@ export function HomePage() {
   }, [me, loadingMe]);
 
   if (loadingMe)
-    return (
-      <div className="page-wrapper">
-        <div className="page content">
-          <Spinner />
-        </div>
-      </div>
-    );
+    return <LoadingPage />
 
   return (
     <>
@@ -41,17 +36,17 @@ export function HomePage() {
               <p>Enjoy puzzles with your friends anywhere at any time</p>
             </div>
             <div className="hero-buttons">
-              <Link to="/auth/signup"><button className="button">Sign up</button></Link>
-              <Link to="/auth/login"><button className="button" datatype="dim">Log in</button></Link>
+              <Link to="/auth/signup"><Button stretch={false} dim={false}>Sign up</Button></Link>
+              <Link to="/auth/login"><Button stretch={false} dim={true}>Log in</Button></Link>
             </div>
           </div>
           <div className="hero-example">
             <h2>When was the declaration of independence signed?</h2>
             <ul className="hero-example-options">
-              <li><button className="button stretch">August 2, 1776</button></li>
-              <li><button className="button stretch">September 1, 1781</button></li>
-              <li><button className="button stretch">July 2, 1770</button></li>
-              <li><button className="button stretch">April 19, 1775</button></li>
+              <li><Button stretch={true} dim={false} >August 2, 1776</Button></li>
+              <li><Button stretch={true} dim={false} >September 1, 1781</Button></li>
+              <li><Button stretch={true} dim={false} >July 2, 1770</Button></li>
+              <li><Button stretch={true} dim={false} >April 19, 1775</Button></li>
             </ul>
           </div>
         </section>
@@ -84,7 +79,7 @@ export function HomePage() {
         <section className="margin-top bg-accent-600 cta">
           <div className="container">
             <p>Sign up today to get the unforgettable quiz experience</p>
-            <Link to="/auth/signup"><button className="button" datatype="dim">Sign up</button></Link>
+            <Link to="/auth/signup"><Button stretch={true} dim={true}>Sign up</Button></Link>
           </div>
         </section>
       </main>

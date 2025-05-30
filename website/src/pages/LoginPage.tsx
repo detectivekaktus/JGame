@@ -4,8 +4,9 @@ import { Footer } from "../components/Footer"
 import { LoginForm } from "../types/user";
 import { BASE_API_URL } from "../utils/consts";
 import { MeContext } from "../context/MeProvider";
-import { Spinner } from "../components/Spinner";
+import { LoadingPage } from "./LoadingPage";
 import "../css/Form.css"
+import { Button } from "../components/Button";
 
 export function LoginPage() {
   const { me, setMe, loadingMe } = useContext(MeContext);
@@ -22,13 +23,7 @@ export function LoginPage() {
   }, [me, loadingMe]);
 
   if (loadingMe)
-    return (
-      <div className="page-wrapper">
-        <div className="page content">
-          <Spinner />
-        </div>
-      </div>
-    );
+    return <LoadingPage />
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -107,7 +102,7 @@ export function LoginPage() {
                 <input required id="password" name="password" type="password" />
                 { errors.password && <div className="form-entry-error">{errors.password}</div> }
               </div>
-              <button type="submit" className="button stretch">Log in</button>
+              <Button stretch={true} dim={false} type="submit">Log in</Button>
             </form>
             <p>Don't have an account?  <Link className="fg-accent-600 underlined" to={"/auth/signup"}>Create one</Link></p>
           </div>

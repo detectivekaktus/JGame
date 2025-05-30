@@ -4,8 +4,9 @@ import { Footer } from "../components/Footer"
 import { SignupForm } from "../types/user";
 import { BASE_API_URL } from "../utils/consts";
 import { MeContext } from "../context/MeProvider";
-import { Spinner } from "../components/Spinner";
+import { LoadingPage } from "./LoadingPage";
 import "../css/Form.css"
+import { Button } from "../components/Button";
 
 export function SignupPage() {
   const { me, loadingMe } = useContext(MeContext);
@@ -22,13 +23,7 @@ export function SignupPage() {
   }, [me, loadingMe]);
 
   if (loadingMe)
-    return (
-      <div className="page-wrapper">
-        <div className="page content">
-          <Spinner />
-        </div>
-      </div>
-    );
+    return <LoadingPage />
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -133,7 +128,7 @@ export function SignupPage() {
                 <input required id="confirm-password" name="confirm-password" type="password" />
                 { errors.confirm_password && <div className="form-entry-error">{errors.confirm_password}</div> }
               </div>
-              <button type="submit" className="button stretch" >Sign up</button>
+              <Button stretch={true} dim={false} type="submit">Log in</Button>
             </form>
             <p>Already have an account?  <Link className="fg-accent-600 underlined" to={"/auth/login"}>Log in</Link></p>
           </div>
