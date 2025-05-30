@@ -1,4 +1,4 @@
-import { RouterProvider} from "react-router-dom"
+import { RouterProvider } from "react-router-dom";
 import { MeProvider } from "./context/MeProvider";
 import { APP_ROUTER } from "./router";
 

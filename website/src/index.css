@@ -284,3 +284,12 @@ svg {
 .stretch {
   width: 100%;
 }
+
+.content {
+  display: flex;
+  gap: var(--fs-500);
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+

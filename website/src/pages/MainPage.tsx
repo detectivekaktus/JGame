@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import { MeContext } from "../context/MeProvider";
+import { Spinner } from "../components/Spinner";
 import "../css/MainPage.css"
 
 export function MainPage() {
@@ -16,6 +17,15 @@ export function MainPage() {
     if (!me)
       navigate("/");
   }, [me, loadingMe])
+
+  if (loadingMe)
+    return (
+      <div className="page-wrapper">
+        <div className="page content">
+          <Spinner />
+        </div>
+      </div>
+    );
 
   return (
     <div className="page-wrapper">

@@ -4,6 +4,7 @@ import { Footer } from "../components/Footer"
 import { SignupForm } from "../types/user";
 import { BASE_API_URL } from "../utils/consts";
 import { MeContext } from "../context/MeProvider";
+import { Spinner } from "../components/Spinner";
 import "../css/Form.css"
 
 export function SignupPage() {
@@ -19,6 +20,15 @@ export function SignupPage() {
     if (me)
       navigate("/main");
   }, [me, loadingMe]);
+
+  if (loadingMe)
+    return (
+      <div className="page-wrapper">
+        <div className="page content">
+          <Spinner />
+        </div>
+      </div>
+    );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

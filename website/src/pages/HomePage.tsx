@@ -6,6 +6,7 @@ import { HomeCard } from "../components/HomeCard"
 import { RoomCard } from "../components/RoomCard"
 import { StatBadge, StatBadgeColor } from "../components/StatBadge"
 import { MeContext } from "../context/MeProvider"
+import { Spinner } from "../components/Spinner"
 import "../css/Home.css"
 
 export function HomePage() {
@@ -19,6 +20,15 @@ export function HomePage() {
     if (me)
       navigate("/main");
   }, [me, loadingMe]);
+
+  if (loadingMe)
+    return (
+      <div className="page-wrapper">
+        <div className="page content">
+          <Spinner />
+        </div>
+      </div>
+    );
 
   return (
     <>
