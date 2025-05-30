@@ -1,6 +1,7 @@
 type ButtonProps = {
   stretch: boolean,
   dim: boolean,
+  className?: string,
   type?: "button" | "submit" | "reset",
   disabled?: boolean,
 
@@ -8,11 +9,11 @@ type ButtonProps = {
   children: any
 }
 
-export function Button({ stretch, dim, type, disabled, onClick, children }: ButtonProps) {
+export function Button({ stretch, dim, type, className, disabled, onClick, children }: ButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`button ${stretch ? "stretch" : ""}`}
+      className={`button ${stretch ? "stretch" : ""} ${className}`}
       datatype={dim ? "dim" : ""}
       type={type}
       disabled={disabled}>

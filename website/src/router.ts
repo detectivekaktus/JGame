@@ -5,6 +5,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { SignupPage } from "./pages/SignupPage";
 import { MainPage } from "./pages/MainPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 export const APP_ROUTER = createBrowserRouter([
   {
@@ -24,7 +25,8 @@ export const APP_ROUTER = createBrowserRouter([
         path: "profile",
         children: [
           { index: true, Component: NotFoundPage },
-          { path: ":id", Component: ProfilePage }
+          { path: ":id", Component: ProfilePage },
+          { path: "settings", Component: SettingsPage }
         ]
       },
       { path: "*", Component: NotFoundPage }

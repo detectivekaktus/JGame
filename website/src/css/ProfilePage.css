@@ -8,6 +8,12 @@
   font-weight: var(--fw-bold);
 }
 
+.name-picture h1 {
+  display: flex;
+  align-items: center;
+  gap: var(--fs-700);
+}
+
 .profile-stats h2 {
   font-size: var(--fs-700);
   font-weight: var(--fw-bold);
