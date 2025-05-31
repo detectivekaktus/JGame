@@ -145,6 +145,19 @@ func PatchPack(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeletePack(w http.ResponseWriter, r *http.Request) {
-	
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	conn := r.Context().Value("db_connection").(*pgx.Conn)
+
+	_, err := database.Execute(conn, "DELETE FROM packs.pack WHERE pack_id = $1", id)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not delete pack at /api/packs/id: %v", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not delete pack with the given id.")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
