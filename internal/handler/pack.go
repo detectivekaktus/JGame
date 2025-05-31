@@ -1,21 +1,27 @@
 package handler
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/detectivekaktus/JGame/internal/database"
 	"github.com/detectivekaktus/JGame/internal/httputils"
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
 )
 
+const MAX_PACKS_RESPONSE = 2 << 7
+
 type Pack struct {
-	Id 			int 						`json:"id"`
-	UserId 	int 						`json:"user_id"`
-	Name 		string 					`json:"name"`
-	Body 		json.RawMessage `json:"body"`
+	Id      int             `json:"id"`
+	UserId  int             `json:"user_id"`
+	Name    string          `json:"name"`
+	Body    json.RawMessage `json:"body"`
 }
 
 // Expected body:
@@ -52,12 +58,70 @@ func CreatePack(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPack(w http.ResponseWriter, r *http.Request) {
-	
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	conn := database.GetConnection()
+	defer conn.Close(context.Background())
+
+	var pack Pack
+	err := database.QueryRow(conn, "SELECT * FROM packs.pack WHERE pack_id = $1", id).
+		Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			httputils.SendErrorMessage(w, http.StatusNotFound, "Not found",
+				"No pack with given id exists.")
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(pack)
 }
 
-// Can apply `name` filter to the result.
+// Can apply `name` filter to the result. Returns max MAX_PACKS_RESPONSE packs.
 func GetPacks(w http.ResponseWriter, r *http.Request) {
-	
+	name := r.URL.Query().Get("name")
+
+	conn := database.GetConnection()
+	defer conn.Close(context.Background())
+
+	var rows pgx.Rows
+	if name == "" {
+		rows = database.QueryRows(conn, "SELECT * FROM packs.pack LIMIT $1", MAX_PACKS_RESPONSE)
+		defer rows.Close()
+	} else {
+		rows = database.QueryRows(conn, "SELECT * FROM packs.pack WHERE name = $1 LIMIT $2", name, MAX_PACKS_RESPONSE)
+		defer rows.Close()
+	}
+
+	var packs []Pack
+	for rows.Next() {
+		var pack Pack
+		err := rows.Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Could not read packs at GET /api/packs: %v", err)
+			httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+				"Could not read packs")
+			return
+		}
+		packs = append(packs, pack)
+	}
+
+	err := rows.Err()
+	if err != nil {
+			fmt.Fprintf(os.Stderr, "Could not iterate packs at GET /api/packs: %v", err)
+			httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+				"Could not iterate packs")
+			return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(packs)
 }
 
 // Expected body:
