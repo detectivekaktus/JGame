@@ -1,3 +1,4 @@
+// TODO: Add JSON validation to all functions of this module
 package handler
 
 import (
@@ -8,6 +9,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/detectivekaktus/JGame/internal/database"
 	"github.com/detectivekaktus/JGame/internal/httputils"
@@ -131,7 +134,51 @@ func GetPacks(w http.ResponseWriter, r *http.Request) {
 //   "body": ... (json)
 // }
 func PutPack(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	conn := r.Context().Value("db_connection").(*pgx.Conn)
 	
+	var pack Pack 
+	err := json.NewDecoder(r.Body).Decode(&pack)
+	if err != nil {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Could not process the body of the request.")
+		return
+	}
+
+	if pack.Id != 0 {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Can't modify id of a pack.")
+		return
+	}
+
+	// TODO: Add json validation
+	if strings.TrimSpace(pack.Name) == "" || pack.UserId == 0 {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Missing fields",
+			"name, user_id, and body fields must be specified on PUT request.")
+		return
+	}
+
+	_, err = database.Execute(conn, "UPDATE packs.pack SET user_id = $1, body = $2, name = $3",
+		pack.UserId, pack.Body, pack.Name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not update pack at PUT /api/packs/id: %v", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not update pack.")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	intid, _ := strconv.Atoi(id)
+	json.NewEncoder(w).Encode(Pack{
+		Id: intid,
+		UserId: pack.UserId,
+		Body: pack.Body,
+		Name: pack.Name,
+	})
 }
 
 // Expected body:
