@@ -1,0 +1,1 @@
+ALTER TABLE packs.pack ADD COLUMN name VARCHAR(32);

@@ -33,10 +33,6 @@ func NewRouter() *mux.Router {
 		chainMiddlewares(http.HandlerFunc(handler.Logout),
 			middleware.RejectBodyMiddleware)).
 		Methods("POST", "OPTIONS")
-	r.Handle("/users/{id:[0-9]+}",
-		chainMiddlewares(http.HandlerFunc(handler.GetUser),
-			middleware.RejectBodyMiddleware)).
-		Methods("GET")
 
 	users := r.PathPrefix("/users").Subrouter()
 	users.Use(middleware.AuthMiddleware)
@@ -59,6 +55,42 @@ func NewRouter() *mux.Router {
 		chainMiddlewares(http.HandlerFunc(handler.DeleteCurrentUser),
 			middleware.RejectBodyMiddleware)).
 		Methods("DELETE", "OPTIONS")
+	// Available without auth
+	r.Handle("/users/{id:[0-9]+}",
+		chainMiddlewares(http.HandlerFunc(handler.GetUser),
+			middleware.RejectBodyMiddleware)).
+		Methods("GET")
+
+	packs := r.PathPrefix("/packs").Subrouter()
+	packs.Use(middleware.AuthMiddleware)
+	packs.Handle("",
+		chainMiddlewares(http.HandlerFunc(handler.CreatePack),
+			middleware.RequireBodyMiddleware,
+			middleware.RequireJsonContentMiddleware)).
+		Methods("POST", "OPTIONS")
+	packs.Handle("/{id:[0-9]+}",
+		chainMiddlewares(http.HandlerFunc(handler.PutPack),
+			middleware.RequireBodyMiddleware,
+			middleware.RequireJsonContentMiddleware)).
+		Methods("PUT", "OPTIONS")
+	packs.Handle("/{id:[0-9]+}",
+		chainMiddlewares(http.HandlerFunc(handler.PatchPack),
+			middleware.RequireBodyMiddleware,
+			middleware.RequireJsonContentMiddleware)).
+		Methods("PATCH", "OPTIONS")
+	packs.Handle("/{id:[0-9]+}",
+		chainMiddlewares(http.HandlerFunc(handler.DeletePack),
+			middleware.RejectBodyMiddleware)).
+		Methods("DELETE", "OPTIONS")
+	// Available without auth
+	r.Handle("/packs",
+		chainMiddlewares(http.HandlerFunc(handler.GetPacks),
+			middleware.RejectBodyMiddleware)).
+		Methods("GET")
+	r.Handle("/packs/{id:[0-9]+}",
+		chainMiddlewares(http.HandlerFunc(handler.GetPack),
+			middleware.RejectBodyMiddleware)).
+		Methods("GET")
 
 	return r
 }

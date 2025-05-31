@@ -6,3 +6,6 @@ web/build
 *.so
 
 .env
+
+# curl cookies
+cookies.test
