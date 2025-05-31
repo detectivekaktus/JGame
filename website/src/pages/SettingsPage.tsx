@@ -137,6 +137,26 @@ export function SettingsPage() {
     document.location.reload();
   };
 
+  const handleLogout = async () => {
+    const newErrors: Record<string, string> = {}
+
+    const res = await fetch(`${BASE_API_URL}/logout`, {
+      method: "POST",
+      credentials: "include"
+    })
+    const body = await res.json();
+
+    if (!res.ok) {
+      errors.req = body["message"];
+      setErrors(newErrors);
+      return;
+    }
+
+    setMe(null);
+    setErrors({});
+    document.location.reload();
+  };
+
   return (
     <div className="page-wrapper">
       <div className="margin-top margin-bottom container page">
@@ -173,7 +193,10 @@ export function SettingsPage() {
           <Button className="save-changes-button" stretch={true} dim={false} onClick={handleSubmit}>Save changes</Button>
         </div>
         <hr />
-        <Button stretch={true} dim={false} onClick={handleDelete}>Delete account</Button>
+        <div className="button-options">
+          <Button stretch={true} dim={true} onClick={handleLogout}>Log out</Button>
+          <Button stretch={true} dim={false} onClick={handleDelete}>Delete account</Button>
+        </div>
       </div>
       <Footer />
     </div>
