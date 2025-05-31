@@ -5,8 +5,8 @@ import { LoginForm } from "../types/user";
 import { BASE_API_URL } from "../utils/consts";
 import { MeContext } from "../context/MeProvider";
 import { LoadingPage } from "./LoadingPage";
-import "../css/Form.css"
 import { Button } from "../components/Button";
+import "../css/Form.css"
 
 export function LoginPage() {
   const { me, setMe, loadingMe } = useContext(MeContext);
@@ -34,21 +34,22 @@ export function LoginPage() {
       email: data.get("email") as string,
       password: data.get("password") as string,
     };
-    const errors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {}
 
     // Copied from StackOverflow
     const emailRegex =
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    if (!userForm.email.trim())
-      errors.email = "Please, enter your email.";
-    else if (!emailRegex.test(userForm.email))
-      errors.email = "Please, enter a valid email.";
+    const email = userForm.email.trim();
+    if (!email)
+      newErrors.email = "Please, enter your email.";
+    else if (!emailRegex.test(email))
+      newErrors.email = "Please, enter a valid email.";
 
     if (!userForm.password)
-      errors.password = "Please, enter your password.";
+      newErrors.password = "Please, enter your password.";
 
-    if (Object.keys(errors).length > 0) {
-      setErrors(errors);
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -61,23 +62,14 @@ export function LoginPage() {
       body: JSON.stringify(userForm)
     });
 
+    const body = await res.json();
     if (!res.ok) {
-      switch (res.status) {
-        case 500: {
-          errors.req = "There was an error on the server. Please, try again later."
-        } break;
-        case 401: {
-          errors.req = "Invalid combination of email and password. Double-check both fields and try again."
-        } break;
-        default: {
-          errors.req = "There was an error on the server. Please, try again later."
-        }
-      }
-      setErrors(errors)
+      newErrors.req = body["message"]
+      setErrors(newErrors);
       return;
     }
 
-    setMe((await res.json())["user"]);
+    setMe(body["user"]);
     navigate("/main");
   };
 

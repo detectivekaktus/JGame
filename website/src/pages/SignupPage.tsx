@@ -5,8 +5,8 @@ import { SignupForm } from "../types/user";
 import { BASE_API_URL } from "../utils/consts";
 import { MeContext } from "../context/MeProvider";
 import { LoadingPage } from "./LoadingPage";
-import "../css/Form.css"
 import { Button } from "../components/Button";
+import "../css/Form.css"
 
 export function SignupPage() {
   const { me, loadingMe } = useContext(MeContext);
@@ -36,33 +36,37 @@ export function SignupPage() {
       password: data.get("password") as string,
       confirm_password: data.get("confirm-password") as string
     };
-    const errors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {}
 
-    if (!userForm.name.trim())
-      errors.name = "Please, enter your name.";
+    const username = userForm.name.trim();
+    if (!username)
+      newErrors.name = "Please, enter your name.";
+    else if (username.length < 4 || username.length > 32)
+      newErrors.name = "Name must be between 4 and 32 characters.";
 
     // Copied from StackOverflow
     const emailRegex =
       /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    if (!userForm.email.trim())
-      errors.email = "Please, enter your email.";
-    else if (!emailRegex.test(userForm.email))
-      errors.email = "Please, enter a valid email.";
+    const email = userForm.email.trim()
+    if (!email)
+      newErrors.email = "Please, enter your email.";
+    else if (!emailRegex.test(email))
+      newErrors.email = "Please, enter a valid email.";
 
     if (!userForm.password)
-      errors.password = "Please, enter your password.";
+      newErrors.password = "Please, enter your password.";
     else if (userForm.password.length < 8 || userForm.password.length > 32)
-      errors.password = "Password must be between 8 and 32 characters long.";
+      newErrors.password = "Password must be between 8 and 32 characters long.";
     else if (!/^(?=.*[a-z])+(?=.*[A-Z])+(?=.*[0-9])+(?=.*[\!\$\@\#\^\&]).{8,32}$/.test(userForm.password))
-      errors.password = "Password must contain uppercase, lowercase, number and one special symbol.";
+      newErrors.password = "Password must contain uppercase, lowercase, number and one special symbol.";
 
     if (!userForm.confirm_password)
-      errors.confirm_password = "Please, repeat your password.";
+      newErrors.confirm_password = "Please, repeat your password.";
     else if (userForm.password !== userForm.confirm_password)
-      errors.confirm_password = "Passwords do not match.";
+      newErrors.confirm_password = "Passwords do not match.";
 
-    if (Object.keys(errors).length > 0) {
-      setErrors(errors);
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -77,20 +81,11 @@ export function SignupPage() {
         password: userForm.password
       })
     });
+    const body = await res.json();
 
     if (!res.ok) {
-      switch (res.status) {
-        case 500: {
-          errors.req = "There was an error on the server. Please, try again later."
-        } break;
-        case 409: {
-          errors.req = "User with this email address already exists. Please, log in."
-        } break;
-        default: {
-          errors.req = "There was an error on the server. Please, try again later."
-        }
-      }
-      setErrors(errors)
+      newErrors.req = body["message"];
+      setErrors(newErrors);
       return;
     }
     else
@@ -128,7 +123,7 @@ export function SignupPage() {
                 <input required id="confirm-password" name="confirm-password" type="password" />
                 { errors.confirm_password && <div className="form-entry-error">{errors.confirm_password}</div> }
               </div>
-              <Button stretch={true} dim={false} type="submit">Log in</Button>
+              <Button stretch={true} dim={false} type="submit">Sign up</Button>
             </form>
             <p>Already have an account?  <Link className="fg-accent-600 underlined" to={"/auth/login"}>Log in</Link></p>
           </div>

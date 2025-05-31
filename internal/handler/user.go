@@ -171,7 +171,13 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, cookie)
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(VerifiedUserResponse{
+		Id: user.Id,
+		Name: user.Name,
+		Email: user.Email,
+	})
 }
 
 func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
@@ -251,6 +257,12 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, cookie)
 	}
 	
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(VerifiedUserResponse{
+		Id: user.Id,
+		Name: user.Name,
+		Email: user.Email,
+	})
 }
 
