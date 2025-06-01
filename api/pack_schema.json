@@ -1,0 +1,53 @@
+{ 
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Quiz schema",
+  "type": "object",
+  "properties": {
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "topics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "questions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "value": { "type": "number" },
+                      "question": { "type": "string" },
+                      "answers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "text": { "type": "string" },
+                            "correct": {"type": "boolean" }
+                          },
+                          "required": ["text", "correct"]
+                        },
+                        "minimum": 2
+                      }
+                    },
+                    "required": ["value", "question", "answers"]
+                  }
+                }
+              },
+              "required": ["name", "questions"]
+            },
+            "minimum": 1
+          }
+        },
+        "required": ["name", "topics"]
+      },
+      "minimum": 1
+    }
+  },
+  "required": ["sections"]
+}
