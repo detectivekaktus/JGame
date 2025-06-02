@@ -183,10 +183,19 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
+	err = database.QueryRow(conn, "SELECT user_id, email, name FROM users.\"user\" WHERE user_id = $1", session.UserId).
+		Scan(&user.Id, &user.Email, &user.Name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not get user for PUT /api/users/me: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not get the user.")
+		return
+	}
+
 	json.NewEncoder(w).Encode(VerifiedUserResponse{
 		Id: user.Id,
-		Name: user.Name,
 		Email: user.Email,
+		Name: user.Name,
 	})
 }
 
@@ -270,10 +279,19 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
+	err = database.QueryRow(conn, "SELECT user_id, email, name FROM users.\"user\" WHERE user_id = $1", session.UserId).
+		Scan(&user.Id, &user.Email, &user.Name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not get user for PATCH /api/users/me: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not get the user.")
+		return
+	}
+
 	json.NewEncoder(w).Encode(VerifiedUserResponse{
 		Id: user.Id,
-		Name: user.Name,
 		Email: user.Email,
+		Name: user.Name,
 	})
 }
 

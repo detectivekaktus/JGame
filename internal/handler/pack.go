@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/detectivekaktus/JGame/internal/database"
@@ -153,35 +152,58 @@ func PutPack(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	conn := r.Context().Value("db_connection").(*pgx.Conn)
+	session := r.Context().Value("session").(*Session)
+
+	var pack Pack
+	err := database.QueryRow(conn, "SELECT * FROM packs.pack WHERE pack_id = $1", id).
+		Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not get pack for PUT /api/users/me: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not get the pack.")
+		return
+	}
+
+	if pack.UserId != session.UserId {
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			"Can't modify a pack that is not owned by themselves.")
+		return
+	}
 	
-	var pack Pack 
-	err := json.NewDecoder(r.Body).Decode(&pack)
+	var requestPack Pack 
+	err = json.NewDecoder(r.Body).Decode(&requestPack)
 	if err != nil {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
 			"Could not process the body of the request.")
 		return
 	}
 
-	if pack.Id != 0 {
+	if requestPack.Id != 0 {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
 			"Can't modify id of a pack.")
 		return
 	}
 
-	if strings.TrimSpace(pack.Name) == "" || pack.UserId == 0 {
-		httputils.SendErrorMessage(w, http.StatusBadRequest, "Missing fields",
-			"name, user_id, and body fields must be specified on PUT request.")
+	if requestPack.UserId != 0 {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Can't change owner of a pack.")
 		return
 	}
 
-	if !validation.ValidateAgainstSchema(validation.PACK_SCHEMA, pack.Body) {
+	if strings.TrimSpace(requestPack.Name) == "" {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Missing fields",
+			"name and body fields must be specified on PUT request.")
+		return
+	}
+
+	if !validation.ValidateAgainstSchema(validation.PACK_SCHEMA, requestPack.Body) {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
 			"The body parameter does not satisfy the schema.")
 		return
 	}
 
-	_, err = database.Execute(conn, "UPDATE packs.pack SET user_id = $1, body = $2, name = $3",
-		pack.UserId, pack.Body, pack.Name)
+	_, err = database.Execute(conn, "UPDATE packs.pack SET body = $1, name = $2 WHERE pack_id = $3",
+		requestPack.Body, requestPack.Name, id)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not update pack at PUT /api/packs/id: %v", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
@@ -192,13 +214,16 @@ func PutPack(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	intid, _ := strconv.Atoi(id)
-	json.NewEncoder(w).Encode(Pack{
-		Id: intid,
-		UserId: pack.UserId,
-		Body: pack.Body,
-		Name: pack.Name,
-	})
+	err = database.QueryRow(conn, "SELECT * FROM packs.pack WHERE pack_id = $1", id).
+		Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not get pack for PUT /api/packs/me: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not get the pack.")
+		return
+	}
+
+	json.NewEncoder(w).Encode(pack)
 }
 
 func PatchPack(w http.ResponseWriter, r *http.Request) {
