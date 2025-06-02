@@ -3,7 +3,7 @@ An online quiz game built with Go and React. Play jeopardy-like games with your 
 
 
 ## Backend
-Written in Go 1.24.2 with `gorilla/mux` to route the incoming traffic and `jackc/pgx` to access the **PostgreSQL** database.
+Written in Go 1.24.2 with `gorilla/mux` to route the incoming traffic and `jackc/pgx` to access the **PostgreSQL** database. `xeipuuv/gojsonschema` 1.2.0 is used to compare requests against json schemas in `/api` directory.
 
 > [!IMPORTANT]
 > In order to run the application you need to create a `.env` file with the postgresql url set to DATABASE_URL environment variable. You should also set up authentication method to md5 inside `pg_hba.conf` file.

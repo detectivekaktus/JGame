@@ -1,5 +1,18 @@
-// TODO: Add JSON validation to all functions of this module
 package handler
+
+// The quiz game packs are stored inside packs.pack PostgreSQL table
+// Currently the table looks like this, considering all the migrations
+// done in the past:
+// packs.pack(
+//   pack_id primary int,
+//   user_id int (from users.user)
+//   body    json
+//   name    varchar(32)
+// )
+//
+// The body is defined within /api/pack_schema.json schema file and all
+// the operations on the packs that require creation or modification on
+// packs are compared against the schema.
 
 import (
 	"context"
@@ -14,8 +27,10 @@ import (
 
 	"github.com/detectivekaktus/JGame/internal/database"
 	"github.com/detectivekaktus/JGame/internal/httputils"
+	"github.com/detectivekaktus/JGame/internal/validation"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const MAX_PACKS_RESPONSE = 2 << 7
@@ -27,12 +42,6 @@ type Pack struct {
 	Body    json.RawMessage `json:"body"`
 }
 
-// Expected body:
-// {
-//   "name": ... (32 chars max)
-//   "user_id": ... (owner_id)
-//   "body": ... (json)
-// }
 func CreatePack(w http.ResponseWriter, r *http.Request) {
 	conn := r.Context().Value("db_connection").(*pgx.Conn)
 
@@ -44,10 +53,22 @@ func CreatePack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !validation.ValidateAgainstSchema(validation.PACK_SCHEMA, pack.Body) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"The body parameter does not satisfy the schema.")
+		return
+	}
+
 	err = database.QueryRow(conn, "INSERT INTO packs.pack (user_id, name, body) VALUES ($1, $2, $3) RETURNING pack_id",
 		pack.UserId, pack.Name, pack.Body).
 		Scan(&pack.Id)
 	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == database.ForeignKeyViolation {
+			httputils.SendErrorMessage(w, http.StatusBadRequest, "User error",
+				"This user can't own a pack.")
+			return
+		}
+
 		fmt.Fprintf(os.Stderr, "Could not create a new pack at POST /api/packs: %v", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not create pack.")
@@ -127,12 +148,6 @@ func GetPacks(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(packs)
 }
 
-// Expected body:
-// {
-//   "name": ... (32 chars max)
-//   "user_id": ... (owner_id)
-//   "body": ... (json)
-// }
 func PutPack(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -153,10 +168,15 @@ func PutPack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Add json validation
 	if strings.TrimSpace(pack.Name) == "" || pack.UserId == 0 {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Missing fields",
 			"name, user_id, and body fields must be specified on PUT request.")
+		return
+	}
+
+	if !validation.ValidateAgainstSchema(validation.PACK_SCHEMA, pack.Body) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"The body parameter does not satisfy the schema.")
 		return
 	}
 
@@ -181,12 +201,6 @@ func PutPack(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Expected body:
-// {
-//   "name": ... (32 chars max)
-//   "user_id": ... (owner_id)
-//   "body": ... (json)
-// }
 func PatchPack(w http.ResponseWriter, r *http.Request) {
 	
 }

@@ -1,5 +1,14 @@
 package handler
 
+// The users are stored in users.user PostgreSQL table. Currently, the
+// table looks like this, considering all the migrations done to it:
+// users.user(
+//   user_id  primary int,
+//   name     varchar(32),
+//   email    unique varchar(255),
+//   password text
+// )
+
 import (
 	"context"
 	"database/sql"
