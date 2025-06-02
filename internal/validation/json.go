@@ -3,6 +3,7 @@ package validation
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/xeipuuv/gojsonschema"
@@ -17,7 +18,9 @@ func ValidateAgainstSchema(schemaPath string, validatee json.RawMessage) bool {
 	validateeLoader := gojsonschema.NewBytesLoader(validatee)
 	res, err := gojsonschema.Validate(schemaLoader, validateeLoader)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Validating json against schema went wrong: %v", err)
+		if err != io.EOF {
+			fmt.Fprintf(os.Stderr, "Validating json against schema went wrong: %v", err)
+		}
 		return false
 	}
 	return res.Valid()

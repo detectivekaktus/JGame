@@ -158,7 +158,7 @@ func PutPack(w http.ResponseWriter, r *http.Request) {
 	err := database.QueryRow(conn, "SELECT * FROM packs.pack WHERE pack_id = $1", id).
 		Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get pack for PUT /api/users/me: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not get pack for PUT /api/packs/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not get the pack.")
 		return
@@ -227,7 +227,93 @@ func PutPack(w http.ResponseWriter, r *http.Request) {
 }
 
 func PatchPack(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	conn := r.Context().Value("db_connection").(*pgx.Conn)
+	session := r.Context().Value("session").(*Session)
+
+	var pack Pack
+	err := database.QueryRow(conn, "SELECT * FROM packs.pack WHERE pack_id = $1", id).
+		Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not get pack for PATCH /api/packs/me: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not get the pack.")
+		return
+	}
+
+	if pack.UserId != session.UserId {
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			"Can't modify a pack that is not owned by themselves.")
+		return
+	}
 	
+	var requestPack Pack 
+	err = json.NewDecoder(r.Body).Decode(&requestPack)
+	if err != nil {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Could not process the body of the request.")
+		return
+	}
+
+	if requestPack.Id != 0 {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Can't modify id of a pack.")
+		return
+	}
+
+	if requestPack.UserId != 0 {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Can't change owner of a pack.")
+		return
+	}
+
+	var fieldsSb strings.Builder
+	var args []any // check handler/user.go:221
+	fieldsSb.WriteString("UPDATE packs.pack SET ")
+
+	if strings.TrimSpace(requestPack.Name) != "" {
+		args = append(args, requestPack.Name)
+		fieldsSb.WriteString(fmt.Sprintf("name = $%d", len(args)))
+	}
+
+	if len(requestPack.Body) != 0 {
+		if !validation.ValidateAgainstSchema(validation.PACK_SCHEMA, requestPack.Body) {
+			httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+				"The body parameter does not satisfy the schema.")
+			return
+		}
+		if len(args) != 0 {
+			fieldsSb.WriteString(", ")
+		}
+		args = append(args, requestPack.Body)
+		fieldsSb.WriteString(fmt.Sprintf("body = $%d", len(args)))
+	}
+
+	args = append(args, id)
+	fieldsSb.WriteString(fmt.Sprintf(" WHERE pack_id = $%d", len(args)))
+	_, err = database.Execute(conn, fieldsSb.String(), args...)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not update pack for PATCH /api/packs/id: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not update pack.")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	err = database.QueryRow(conn, "SELECT * FROM packs.pack WHERE pack_id = $1", id).
+		Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not get pack for PATCH /api/packs/me: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not get the pack.")
+		return
+	}
+
+	json.NewEncoder(w).Encode(pack)
 }
 
 func DeletePack(w http.ResponseWriter, r *http.Request) {
@@ -235,8 +321,25 @@ func DeletePack(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	conn := r.Context().Value("db_connection").(*pgx.Conn)
+	session := r.Context().Value("session").(*Session)
 
-	_, err := database.Execute(conn, "DELETE FROM packs.pack WHERE pack_id = $1", id)
+	var pack Pack
+	err := database.QueryRow(conn, "SELECT * FROM packs.pack WHERE pack_id = $1", id).
+		Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Could not get pack for DELETE /api/packs/me: %v\n", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not get the pack.")
+		return
+	}
+
+	if pack.UserId != session.UserId {
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			"Can't modify a pack that is not owned by themselves.")
+		return
+	}
+
+	_, err = database.Execute(conn, "DELETE FROM packs.pack WHERE pack_id = $1", id)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not delete pack at /api/packs/id: %v", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
