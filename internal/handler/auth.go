@@ -93,7 +93,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	hash, err := hashPassword(user.Password)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not generate password hash for POST /api/users: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not generate password hash POST /api/register: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not process user password.")
 		return
@@ -110,7 +110,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprintf(os.Stderr, "Could not insert new user in the table for POST /api/users: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not insert new user in the table POST /api/register: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not create user.")
 		return
@@ -154,7 +154,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprintf(os.Stderr, "Could not retrieve the user password for POST /api/login: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not retrieve the user password POST /api/login: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not authenticate the user.")
 		return
@@ -169,7 +169,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	max := new(big.Int).Lsh(big.NewInt(1), 128)
 	sessionId, err := rand.Int(rand.Reader, max)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not generate secure id for POST /api/login: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not generate secure id POST /api/login: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not create session.")
 		return
@@ -180,7 +180,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	_, err = database.Execute(conn, "INSERT INTO users.user_session (session_id, user_id, created_at, expires_at) VALUES ($1, $2, $3, $4)",
 		sessionId.String(), user.Id, now, expires) // expires after 30 days
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not insert new session into database for POST /api/login: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not insert new session into database POST /api/login: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not create session.")
 		return
@@ -216,7 +216,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 	session, err := GetUserSession(conn, r)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get the current user session for POST /api/logout: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not get the current user session POST /api/logout: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Session retrieval error",
 			"Could not get the original session via cookie.")
 		return
@@ -224,7 +224,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := DeleteUserSession(conn, session.Id)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not delete the current user session for POST /api/logout: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not delete the current user session POST /api/logout: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Internal error",
 			"Could not delete the provided session.")
 		return

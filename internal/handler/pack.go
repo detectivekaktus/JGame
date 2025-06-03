@@ -96,6 +96,10 @@ func GetPack(w http.ResponseWriter, r *http.Request) {
 				"No pack with given id exists.")
 			return
 		}
+		fmt.Fprintf(os.Stderr, "Could not read packs at GET /api/packs/id: %v", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not read pack")
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -135,10 +139,10 @@ func GetPacks(w http.ResponseWriter, r *http.Request) {
 
 	err := rows.Err()
 	if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not iterate packs at GET /api/packs: %v", err)
-			httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
-				"Could not iterate packs")
-			return
+		fmt.Fprintf(os.Stderr, "Could not iterate packs at GET /api/packs: %v", err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not iterate packs")
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -158,7 +162,7 @@ func PutPack(w http.ResponseWriter, r *http.Request) {
 	err := database.QueryRow(conn, "SELECT * FROM packs.pack WHERE pack_id = $1", id).
 		Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get pack for PUT /api/packs/me: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not get pack for PUT /api/packs/id: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not get the pack.")
 		return
@@ -169,7 +173,7 @@ func PutPack(w http.ResponseWriter, r *http.Request) {
 			"Can't modify a pack that is not owned by themselves.")
 		return
 	}
-	
+
 	var requestPack Pack 
 	err = json.NewDecoder(r.Body).Decode(&requestPack)
 	if err != nil {
@@ -217,7 +221,7 @@ func PutPack(w http.ResponseWriter, r *http.Request) {
 	err = database.QueryRow(conn, "SELECT * FROM packs.pack WHERE pack_id = $1", id).
 		Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get pack for PUT /api/packs/me: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not get pack for PUT /api/packs/id: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not get the pack.")
 		return
@@ -237,7 +241,7 @@ func PatchPack(w http.ResponseWriter, r *http.Request) {
 	err := database.QueryRow(conn, "SELECT * FROM packs.pack WHERE pack_id = $1", id).
 		Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get pack for PATCH /api/packs/me: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not get pack for PATCH /api/packs/id: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not get the pack.")
 		return
@@ -248,7 +252,7 @@ func PatchPack(w http.ResponseWriter, r *http.Request) {
 			"Can't modify a pack that is not owned by themselves.")
 		return
 	}
-	
+
 	var requestPack Pack 
 	err = json.NewDecoder(r.Body).Decode(&requestPack)
 	if err != nil {
@@ -307,7 +311,7 @@ func PatchPack(w http.ResponseWriter, r *http.Request) {
 	err = database.QueryRow(conn, "SELECT * FROM packs.pack WHERE pack_id = $1", id).
 		Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get pack for PATCH /api/packs/me: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not get pack for PATCH /api/packs/id: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not get the pack.")
 		return
@@ -327,7 +331,7 @@ func DeletePack(w http.ResponseWriter, r *http.Request) {
 	err := database.QueryRow(conn, "SELECT * FROM packs.pack WHERE pack_id = $1", id).
 		Scan(&pack.Id, &pack.UserId, &pack.Body, &pack.Name)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get pack for DELETE /api/packs/me: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not get pack for DELETE /api/packs/id: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not get the pack.")
 		return

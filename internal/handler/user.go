@@ -57,7 +57,7 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	err := database.QueryRow(conn, "SELECT user_id, email, name FROM users.\"user\" WHERE user_id = $1", session.UserId).
 		Scan(&user.Id, &user.Email, &user.Name)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get logged in user for GET /api/users/me: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not get logged in user GET /api/users/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not get the user.")
 		return
@@ -90,7 +90,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprintf(os.Stderr, "Could not get user from database for GET /api/users/id: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not get user from database GET /api/users/id: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not get the user with the given id.")
 		return
@@ -111,15 +111,15 @@ func DeleteCurrentUser(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := DeleteUserSession(conn, session.Id)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not delete user session for DELETE /api/users/id: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not delete user session DELETE /api/users/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
-			"Could not delete user session for the user with the given id.")
+			"Could not delete user session the user with the given id.")
 		return
 	}
 
 	_, err = database.Execute(conn, "DELETE FROM users.\"user\" WHERE user_id = $1", session.UserId)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not delete user for DELETE /api/users/id: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not delete user DELETE /api/users/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not delete user with the given id.")
 		return
@@ -155,7 +155,7 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 
 	hash, err := hashPassword(user.Password)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not generate password hash for PUT /api/users/id: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not generate password hash PUT /api/users/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not process user password.")
 		return
@@ -165,7 +165,7 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 	_, err = database.Execute(conn, "UPDATE users.\"user\" SET name = $1, email = $2, password = $3 WHERE user_id = $4",
 		user.Name, user.Email, user.Password, session.UserId)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not update user for PUT /api/users/id: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not update user PUT /api/users/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not update user.")
 		return
@@ -173,7 +173,7 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := DeleteUserSession(conn, session.Id)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not delete user session for PUT /api/users/id: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not delete user session PUT /api/users/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not update user session.")
 		return
@@ -186,7 +186,7 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 	err = database.QueryRow(conn, "SELECT user_id, email, name FROM users.\"user\" WHERE user_id = $1", session.UserId).
 		Scan(&user.Id, &user.Email, &user.Name)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get user for PUT /api/users/me: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not get user PUT /api/users/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not get the user.")
 		return
@@ -243,7 +243,7 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 
 		hash, err := hashPassword(user.Password)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not generate password hash for PATCH /api/users/id: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Could not generate password hash PATCH /api/users/me: %v\n", err)
 			httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 				"Could not process user password.")
 			return
@@ -258,7 +258,7 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 
 	_, err = database.Execute(conn, fieldsSb.String(), args...)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not update user for PATCH /api/users/id: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not update user PATCH /api/users/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not update user.")
 		return
@@ -267,7 +267,7 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 	if user.Password != "" {
 		cookie, err := DeleteUserSession(conn, session.Id)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not log out user for PATCH /api/users/id: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Could not log out user PATCH /api/users/me: %v\n", err)
 			httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 				"Could not update user.")
 			return
@@ -282,7 +282,7 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 	err = database.QueryRow(conn, "SELECT user_id, email, name FROM users.\"user\" WHERE user_id = $1", session.UserId).
 		Scan(&user.Id, &user.Email, &user.Name)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not get user for PATCH /api/users/me: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Could not get user PATCH /api/users/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
 			"Could not get the user.")
 		return
