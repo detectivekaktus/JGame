@@ -1,0 +1,27 @@
+.pack-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pack-card-name {
+  font-weight: var(--fw-bold);
+}
+
+.pack-card-owner {
+  font-weight: var(--fw-normal);
+}
+
+.pack-card-popup {
+  background-color: var(--clr-neutral-100);
+}
+
+.pack-card-popup-content h3 {
+  font-size: var(--fs-600);
+  font-weight: var(--fw-bold);
+}
+
+.pack-card-popup-content button {
+  font-weight: var(--fw-normal);
+  font-size: var(--fs-400);
+}

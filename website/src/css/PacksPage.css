@@ -1,0 +1,9 @@
+.packs-menu h2 {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-700);
+}
+
+.packs-list {
+  display: grid;
+  gap: var(--fs-400);
+}

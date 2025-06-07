@@ -6,6 +6,7 @@ import { SignupPage } from "./pages/SignupPage";
 import { MainPage } from "./pages/MainPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { PacksPage } from "./pages/PacksPage";
 
 export const APP_ROUTER = createBrowserRouter([
   {
@@ -29,6 +30,7 @@ export const APP_ROUTER = createBrowserRouter([
           { path: "settings", Component: SettingsPage }
         ]
       },
+      { path: "packs", Component: PacksPage },
       { path: "*", Component: NotFoundPage }
     ]
   },
