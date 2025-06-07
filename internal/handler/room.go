@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/detectivekaktus/JGame/internal/database"
 	"github.com/detectivekaktus/JGame/internal/httputils"
@@ -35,9 +36,9 @@ type Room struct {
 }
 
 const (
-	MAX_USERS_IN_ROOM  = 2 << 4
-	MAX_ROOMS          = 2 << 10
-	MAX_ROOMS_RESPONSE = 2 << 7
+	MAX_USERS_IN_ROOM  = 2 << 3
+	MAX_ROOMS          = 2 << 9
+	MAX_ROOMS_RESPONSE = 2 << 5
 )
 
 var usersInGame map[int]bool = make(map[int]bool)
@@ -103,7 +104,46 @@ func CreateRoom(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutRoom(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	intid, _ := strconv.Atoi(id)
 
+	if intid >= MAX_ROOMS || intid > len(rooms) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Invalid room id")
+		return
+	}
+
+	var requestedRoom Room
+	err := json.NewDecoder(r.Body).Decode(&requestedRoom)
+	if err != nil {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Could not process the body of the request.")
+		return
+	}
+
+	if strings.TrimSpace(requestedRoom.Name) == "" || requestedRoom.PackId == 0 {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Missing fields",
+			"name and pack_id fields must be specified on PUT request.")
+		return
+	}
+
+	if requestedRoom.UserId != 0 || requestedRoom.Id != 0 ||
+		len(requestedRoom.Users) != 0 || requestedRoom.CurrentUsers != 0 ||
+		requestedRoom.MaxUsers != 0 || len(requestedRoom.BannedUsers) != 0 {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Modifying non-editable fields",
+			"user_id, users, current_users, max_users, and banned_users fields can't be changed via PUT request.")
+		return
+	}
+
+	room := rooms[intid - 1]
+	room.Name = requestedRoom.Name
+	room.PackId = requestedRoom.PackId
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(room)
 }
 
 func PatchRoom(w http.ResponseWriter, r *http.Request) {
@@ -119,7 +159,7 @@ func GetRoom(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	intid, _ := strconv.Atoi(id)
-	if intid >= MAX_ROOMS || intid >= len(rooms) {
+	if intid >= MAX_ROOMS || intid > len(rooms) {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
 			"Invalid room id")
 		return

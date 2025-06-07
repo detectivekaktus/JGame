@@ -32,7 +32,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-const MAX_PACKS_RESPONSE = 2 << 7
+const MAX_PACKS_RESPONSE = 2 << 5
 
 type Pack struct {
 	Id      int             `json:"id"`
