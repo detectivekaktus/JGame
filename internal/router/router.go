@@ -92,5 +92,50 @@ func NewRouter() *mux.Router {
 			middleware.RejectBodyMiddleware)).
 		Methods("GET")
 
+	rooms := r.PathPrefix("/rooms").Subrouter()
+	rooms.Use(middleware.AuthMiddleware)
+	rooms.Handle("",
+		chainMiddlewares(http.HandlerFunc(handler.CreateRoom),
+			middleware.RequireBodyMiddleware,
+			middleware.RequireJsonContentMiddleware)).
+	Methods("POST", "OPTIONS")
+	rooms.Handle("/{id:[0-9]+}",
+		chainMiddlewares(http.HandlerFunc(handler.PutRoom),
+			middleware.RequireBodyMiddleware,
+			middleware.RequireJsonContentMiddleware)).
+	Methods("PUT", "OPTIONS")
+	rooms.Handle("/{id:[0-9]+}",
+		chainMiddlewares(http.HandlerFunc(handler.PatchRoom),
+			middleware.RequireBodyMiddleware,
+			middleware.RequireJsonContentMiddleware)).
+	Methods("PATCH", "OPTIONS")
+	rooms.Handle("/{id:[0-9]+}",
+		chainMiddlewares(http.HandlerFunc(handler.DeleteRoom),
+			middleware.RejectBodyMiddleware)).
+	Methods("DELETE", "OPTIONS")
+	rooms.Handle("/{id:[0-9]+}/join",
+		chainMiddlewares(http.HandlerFunc(handler.JoinRoom),
+			middleware.RequireBodyMiddleware,
+			middleware.RequireJsonContentMiddleware)).
+	Methods("POST", "OPTIONS")
+	rooms.Handle("/{id:[0-9]+}/leave",
+		chainMiddlewares(http.HandlerFunc(handler.LeaveRoom),
+			middleware.RejectBodyMiddleware)).
+	Methods("POST", "OPTIONS")
+	rooms.Handle("/{id:[0-9]+}/ban",
+		chainMiddlewares(http.HandlerFunc(handler.BanUserInRoom),
+			middleware.RequireBodyMiddleware,
+			middleware.RequireJsonContentMiddleware)).
+	Methods("POST", "OPTIONS")
+	// Available without auth
+	r.Handle("/rooms",
+		chainMiddlewares(http.HandlerFunc(handler.GetRooms),
+			middleware.RejectBodyMiddleware)).
+		Methods("GET")
+	r.Handle("/rooms/{id:[0-9]+}",
+		chainMiddlewares(http.HandlerFunc(handler.GetRoom),
+			middleware.RejectBodyMiddleware)).
+		Methods("GET")
+
 	return r
 }
