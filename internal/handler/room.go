@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -137,6 +138,14 @@ func PutRoom(w http.ResponseWriter, r *http.Request) {
 	}
 
 	room := rooms[intid - 1]
+	session := r.Context().Value("session").(*Session)
+
+	if session.UserId != room.UserId {
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			"Can't modify a room that is not owned by themselves.")
+		return
+	}
+
 	room.Name = requestedRoom.Name
 	room.PackId = requestedRoom.PackId
 
@@ -151,7 +160,33 @@ func PatchRoom(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteRoom(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
 
+	intid, _ := strconv.Atoi(id)
+	if intid >= MAX_ROOMS || intid > len(rooms) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Invalid room id")
+		return
+	}
+
+	room := rooms[intid - 1]
+	session := r.Context().Value("session").(*Session)
+
+	if session.UserId != room.UserId {
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			"Can't delete a room that is not owned by themselves.")
+		return
+	}
+
+	for _, userId := range room.Users {
+		delete(usersInGame, userId)
+	}
+
+	// deletes item from intid - 1 (included) up to intid (not included)
+	// basically deleting the room and leaving free space for other rooms.
+	rooms = slices.Delete(rooms, intid - 1, intid)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func GetRoom(w http.ResponseWriter, r *http.Request) {
