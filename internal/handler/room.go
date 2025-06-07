@@ -84,8 +84,16 @@ func CreateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	roomId := 1
+	for i, room := range rooms {
+		if room == nil {
+			roomId = i + 1
+			break
+		}
+	}
+
 	room := &Room{
-		Id: len(rooms) + 1,
+		Id: roomId,
 		Name: requestedRoom.Name,
 		PackId: requestedRoom.PackId,
 		UserId: session.UserId,
