@@ -48,6 +48,10 @@ type RoomResponse struct {
 	MaxUsers     int    `json:"max_users"`
 }
 
+type RoomStatusResponse struct {
+	Message string `json:"message"`
+}
+
 const (
 	MAX_USERS_IN_ROOM  = 2 << 3
 	MAX_ROOMS          = 2 << 9
@@ -386,11 +390,93 @@ func GetRooms(w http.ResponseWriter, r *http.Request) {
 }
 
 func JoinRoom(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	intid, _ := strconv.Atoi(id)
 
+	if intid >= MAX_ROOMS || intid > len(rooms) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Invalid room id")
+		return
+	}
+
+	session := r.Context().Value("session").(*Session)
+
+	if usersInGame[session.UserId] {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Already in game.")
+		return
+	}
+
+	var requestedRoom Room
+	err := json.NewDecoder(r.Body).Decode(&requestedRoom)
+	if err != nil {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Could not process the body of the request.")
+		return
+	}
+
+	room := rooms[intid - 1]
+	if requestedRoom.Password != room.Password {
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			"Wrong password credential.")
+		return
+	}
+
+	if room.CurrentUsers >= MAX_USERS_IN_ROOM {
+		httputils.SendErrorMessage(w, http.StatusServiceUnavailable, "Service unavailable",
+			"Users limit reached.")
+		return
+	}
+
+	room.Users = append(room.Users, session.UserId)
+	room.CurrentUsers++
+	usersInGame[session.UserId] = true
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(RoomStatusResponse{
+		Message: "Joined room.",
+	})
 }
 
 func LeaveRoom(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	intid, _ := strconv.Atoi(id)
 
+	if intid >= MAX_ROOMS || intid > len(rooms) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Invalid room id")
+		return
+	}
+
+	session := r.Context().Value("session").(*Session)
+
+	if !usersInGame[session.UserId] {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Not in game.")
+		return
+	}
+
+	room := rooms[intid - 1]
+	if !slices.Contains(room.Users, session.UserId) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Not in room.")
+		return
+	}
+
+	index := slices.Index(room.Users, session.UserId) // may possibly be -1?
+	room.Users = slices.Delete(room.Users, index, index + 1)
+	delete(usersInGame, session.UserId)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(RoomStatusResponse{
+		Message: "Left room.",
+	})
 }
 
 func BanUserInRoom(w http.ResponseWriter, r *http.Request) {
