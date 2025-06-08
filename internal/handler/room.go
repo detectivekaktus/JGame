@@ -147,10 +147,26 @@ func PutRoom(w http.ResponseWriter, r *http.Request) {
 
 	room := rooms[intid - 1]
 	session := r.Context().Value("session").(*Session)
+	conn := r.Context().Value("db_connection").(*pgx.Conn)
 
 	if session.UserId != room.UserId {
 		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
 			"Can't modify a room that is not owned by themselves.")
+		return
+	}
+
+	var packExists bool
+	err = database.QueryRow(conn, "SELECT EXISTS (SELECT * FROM packs.pack WHERE pack_id = $1)", requestedRoom.PackId).
+		Scan(&packExists)
+	if err != nil {
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not retrieve pack associated with the room.")
+		return
+	}
+
+	if !packExists {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"No pack with the given id exists.")
 		return
 	}
 
@@ -164,7 +180,70 @@ func PutRoom(w http.ResponseWriter, r *http.Request) {
 }
 
 func PatchRoom(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	intid, _ := strconv.Atoi(id)
 
+	if intid >= MAX_ROOMS || intid > len(rooms) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Invalid room id")
+		return
+	}
+
+	var requestedRoom Room
+	err := json.NewDecoder(r.Body).Decode(&requestedRoom)
+	if err != nil {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Could not process the body of the request.")
+		return
+	}
+
+	if requestedRoom.UserId != 0 || requestedRoom.Id != 0 ||
+		len(requestedRoom.Users) != 0 || requestedRoom.CurrentUsers != 0 ||
+		requestedRoom.MaxUsers != 0 || len(requestedRoom.BannedUsers) != 0 {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Modifying non-editable fields",
+			"room_id, user_id, users, current_users, max_users, and banned_users fields can't be changed via PATCH request.")
+		return
+	}
+
+	room := rooms[intid - 1]
+	session := r.Context().Value("session").(*Session)
+
+	if session.UserId != room.UserId {
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			"Can't modify a room that is not owned by themselves.")
+		return
+	}
+
+	if requestedRoom.Name != "" {
+		room.Name = requestedRoom.Name
+	}
+
+	if requestedRoom.PackId != 0 {
+		conn := r.Context().Value("db_connection").(*pgx.Conn)
+
+		var packExists bool
+		err = database.QueryRow(conn, "SELECT EXISTS (SELECT * FROM packs.pack WHERE pack_id = $1)", requestedRoom.PackId).
+			Scan(&packExists)
+		if err != nil {
+			httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+				"Could not retrieve pack associated with the room.")
+			return
+		}
+
+		if !packExists {
+			httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+				"No pack with the given id exists.")
+			return
+		}
+
+		room.PackId = requestedRoom.PackId
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(room)
 }
 
 func DeleteRoom(w http.ResponseWriter, r *http.Request) {
