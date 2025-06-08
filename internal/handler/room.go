@@ -423,6 +423,12 @@ func JoinRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if slices.Contains(room.BannedUsers, session.UserId) {
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			"You were banned from this room.")
+		return
+	}
+
 	if room.CurrentUsers >= MAX_USERS_IN_ROOM {
 		httputils.SendErrorMessage(w, http.StatusServiceUnavailable, "Service unavailable",
 			"Users limit reached.")
@@ -480,5 +486,117 @@ func LeaveRoom(w http.ResponseWriter, r *http.Request) {
 }
 
 func BanUserInRoom(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	intid, _ := strconv.Atoi(id)
 
+	if intid >= MAX_ROOMS || intid > len(rooms) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Invalid room id")
+		return
+	}
+
+	session := r.Context().Value("session").(*Session)
+
+	if !usersInGame[session.UserId] {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Not in game.")
+		return
+	}
+
+	room := rooms[intid - 1]
+	if session.UserId != room.UserId {
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			"Can't ban a user from a room that is not owned by themselves.")
+		return
+	}
+
+	var bannedUser User
+	err := json.NewDecoder(r.Body).Decode(&bannedUser)
+	if err != nil {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Could not process the body of the request.")
+		return
+	}
+
+	if bannedUser.Id == 0 {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Expected user_id of the user to be banned.")
+		return
+	}
+
+	if !slices.Contains(room.Users, bannedUser.Id) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Can't ban a user that's not in room.")
+		return
+	}
+
+	index := slices.Index(room.Users, bannedUser.Id)
+	room.Users = slices.Delete(room.Users, index, index + 1)
+	room.BannedUsers = append(room.BannedUsers, bannedUser.Id)
+	delete(usersInGame, bannedUser.Id)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(RoomStatusResponse{
+		Message: "Banned user.",
+	})
+}
+
+func UnbanUserInRoom(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	intid, _ := strconv.Atoi(id)
+
+	if intid >= MAX_ROOMS || intid > len(rooms) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Invalid room id")
+		return
+	}
+
+	session := r.Context().Value("session").(*Session)
+
+	if !usersInGame[session.UserId] {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Not in game.")
+		return
+	}
+
+	room := rooms[intid - 1]
+	if session.UserId != room.UserId {
+		httputils.SendErrorMessage(w, http.StatusForbidden, "Forbidden",
+			"Can't unban a user from a room that is not owned by themselves.")
+		return
+	}
+
+	var bannedUser User
+	err := json.NewDecoder(r.Body).Decode(&bannedUser)
+	if err != nil {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Could not process the body of the request.")
+		return
+	}
+
+	if bannedUser.Id == 0 {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"Expected user_id of the user to be unbanned.")
+		return
+	}
+
+	if !slices.Contains(room.BannedUsers, bannedUser.Id) {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
+			"User is not banned.")
+		return
+	}
+
+	index := slices.Index(room.BannedUsers, bannedUser.Id)
+	room.BannedUsers = slices.Delete(room.BannedUsers, index, index + 1)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(RoomStatusResponse{
+		Message: "Unbanned user.",
+	})
 }

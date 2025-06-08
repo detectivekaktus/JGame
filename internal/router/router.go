@@ -127,6 +127,11 @@ func NewRouter() *mux.Router {
 			middleware.RequireBodyMiddleware,
 			middleware.RequireJsonContentMiddleware)).
 	Methods("POST", "OPTIONS")
+	rooms.Handle("/{id:[0-9]+}/unban",
+		chainMiddlewares(http.HandlerFunc(handler.UnbanUserInRoom),
+			middleware.RequireBodyMiddleware,
+			middleware.RequireJsonContentMiddleware)).
+	Methods("POST", "OPTIONS")
 	// Available without auth
 	r.Handle("/rooms",
 		chainMiddlewares(http.HandlerFunc(handler.GetRooms),
