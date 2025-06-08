@@ -33,7 +33,19 @@ type Room struct {
 	Users        []int  `json:"users"`
 	CurrentUsers int    `json:"current_users"`
 	MaxUsers     int    `json:"max_users"`
-	BannedUsers  []int  `json:"banned_users"`
+	BannedUsers  []int  `json:"-"`
+	Password		 string `json:"password"`
+}
+
+// same as the one above, but without Password and BannedUsers fields
+type RoomResponse struct {
+	Id           int    `json:"room_id"`
+	Name         string `json:"name"`
+	PackId       int    `json:"pack_id"`
+	UserId       int    `json:"user_id"`
+	Users        []int  `json:"users"`
+	CurrentUsers int    `json:"current_users"`
+	MaxUsers     int    `json:"max_users"`
 }
 
 const (
@@ -101,6 +113,7 @@ func CreateRoom(w http.ResponseWriter, r *http.Request) {
 		CurrentUsers: 1,
 		MaxUsers: MAX_USERS_IN_ROOM,
 		BannedUsers: make([]int, 0),
+		Password: requestedRoom.Password,
 	}
 	room.Users = append(room.Users, session.UserId)
 	rooms = append(rooms, room)
@@ -109,7 +122,15 @@ func CreateRoom(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	json.NewEncoder(w).Encode(room)
+	json.NewEncoder(w).Encode(RoomResponse{
+		Id: room.Id,
+		Name: room.Name,
+		PackId: room.PackId,
+		UserId: room.UserId,
+		Users: room.Users,
+		CurrentUsers: room.CurrentUsers,
+		MaxUsers: room.MaxUsers,
+	})
 }
 
 func PutRoom(w http.ResponseWriter, r *http.Request) {
@@ -131,7 +152,8 @@ func PutRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.TrimSpace(requestedRoom.Name) == "" || requestedRoom.PackId == 0 {
+	if strings.TrimSpace(requestedRoom.Name) == "" || requestedRoom.PackId == 0 || 
+		requestedRoom.Password == "" {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Missing fields",
 			"name and pack_id fields must be specified on PUT request.")
 		return
@@ -172,11 +194,20 @@ func PutRoom(w http.ResponseWriter, r *http.Request) {
 
 	room.Name = requestedRoom.Name
 	room.PackId = requestedRoom.PackId
+	room.Password = requestedRoom.Password
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(room)
+	json.NewEncoder(w).Encode(RoomResponse{
+		Id: room.Id,
+		Name: room.Name,
+		PackId: room.PackId,
+		UserId: room.UserId,
+		Users: room.Users,
+		CurrentUsers: room.CurrentUsers,
+		MaxUsers: room.MaxUsers,
+	})
 }
 
 func PatchRoom(w http.ResponseWriter, r *http.Request) {
@@ -219,6 +250,10 @@ func PatchRoom(w http.ResponseWriter, r *http.Request) {
 		room.Name = requestedRoom.Name
 	}
 
+	if requestedRoom.Password != "" {
+		room.Password = requestedRoom.Password
+	}
+
 	if requestedRoom.PackId != 0 {
 		conn := r.Context().Value("db_connection").(*pgx.Conn)
 
@@ -243,7 +278,15 @@ func PatchRoom(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(room)
+	json.NewEncoder(w).Encode(RoomResponse{
+		Id: room.Id,
+		Name: room.Name,
+		PackId: room.PackId,
+		UserId: room.UserId,
+		Users: room.Users,
+		CurrentUsers: room.CurrentUsers,
+		MaxUsers: room.MaxUsers,
+	})
 }
 
 func DeleteRoom(w http.ResponseWriter, r *http.Request) {
@@ -290,13 +333,22 @@ func GetRoom(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(rooms[intid - 1])
+	room := rooms[intid - 1]
+	json.NewEncoder(w).Encode(RoomResponse{
+		Id: room.Id,
+		Name: room.Name,
+		PackId: room.PackId,
+		UserId: room.UserId,
+		Users: room.Users,
+		CurrentUsers: room.CurrentUsers,
+		MaxUsers: room.MaxUsers,
+	})
 }
 
 func GetRooms(w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Query().Get("name")
 
-	var responseRooms []*Room = make([]*Room, 0, MAX_ROOMS_RESPONSE)
+	var responseRooms []*RoomResponse = make([]*RoomResponse, 0, MAX_ROOMS_RESPONSE)
 	for _, room := range rooms {
 		if room == nil {
 			continue
@@ -304,11 +356,27 @@ func GetRooms(w http.ResponseWriter, r *http.Request) {
 
 		if name != "" {
 			if room.Name == name {
-				responseRooms = append(responseRooms, room)
+				responseRooms = append(responseRooms, &RoomResponse{
+					Id: room.Id,
+					Name: room.Name,
+					PackId: room.PackId,
+					UserId: room.UserId,
+					Users: room.Users,
+					CurrentUsers: room.CurrentUsers,
+					MaxUsers: room.MaxUsers,
+				})
 			}
 			continue
 		}
-		responseRooms = append(responseRooms, room)
+		responseRooms = append(responseRooms, &RoomResponse{
+			Id: room.Id,
+			Name: room.Name,
+			PackId: room.PackId,
+			UserId: room.UserId,
+			Users: room.Users,
+			CurrentUsers: room.CurrentUsers,
+			MaxUsers: room.MaxUsers,
+		})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
