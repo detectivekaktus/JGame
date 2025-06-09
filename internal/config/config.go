@@ -27,8 +27,14 @@ func load() *Config {
 		os.Exit(1)
 	}
 
+	mode := os.Getenv("MODE")
+	if mode == "" {
+		fmt.Fprintf(os.Stderr, "No environment variable MODE found. Assuming default `dev`.\n")
+		mode = "dev"
+	}
+
 	c := &Config{
-		DevMode: len(os.Getenv("BACKEND_DEV")) > 0,
+		DevMode: mode == "dev",
 		DbUrl: dbUrl,
 	}
 	return c

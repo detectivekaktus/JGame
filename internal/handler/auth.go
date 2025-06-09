@@ -176,9 +176,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now().UTC()
-	expires := now.Add(720 * time.Hour)
+	expires := now.Add(720 * time.Hour) // expires after 30 days
 	_, err = database.Execute(conn, "INSERT INTO users.user_session (session_id, user_id, created_at, expires_at) VALUES ($1, $2, $3, $4)",
-		sessionId.String(), user.Id, now, expires) // expires after 30 days
+		sessionId.String(), user.Id, now, expires)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not insert new session into database POST /api/login: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
