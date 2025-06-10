@@ -89,8 +89,8 @@ func RequireJsonContentMiddleware(next http.Handler) http.Handler {
 }
 
 var AllowedCorsOrigins = map[string]bool {
-	"http://127.0.0.1:5173": true,
-	"http://localhost:5173": true,
+	"https://127.0.0.1:5173": true,
+	"https://localhost:5173": true,
 }
 
 // Sets up Cross-Origin Resource Sharing mechanism workarounds to accept requests
