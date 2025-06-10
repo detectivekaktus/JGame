@@ -8,8 +8,10 @@ import (
 )
 
 type Config struct {
-	DevMode 	bool
-	DbUrl 		string
+	DevMode     bool
+	DbUrl       string
+	SslCertPath string
+	SslKeyPath  string
 }
 
 var AppConfig = load()
@@ -33,9 +35,19 @@ func load() *Config {
 		mode = "dev"
 	}
 
+	sslCertificatePath := os.Getenv("SSL_CERT_PATH")
+	sslKeyPath := os.Getenv("SSL_KEY_PATH")
+
+	if sslCertificatePath == "" || sslKeyPath == "" {
+		fmt.Fprintf(os.Stderr, "No SSL certificate or key found. The dev environment must run with HTTPS. Obtain a SSL certificate.")
+		os.Exit(1)
+	}
+
 	c := &Config{
 		DevMode: mode == "dev",
 		DbUrl: dbUrl,
+		SslCertPath: sslCertificatePath,
+		SslKeyPath: sslKeyPath,
 	}
 	return c
 }

@@ -9,3 +9,6 @@ web/build
 
 # curl cookies
 cookies.test
+
+cert
+cert/
