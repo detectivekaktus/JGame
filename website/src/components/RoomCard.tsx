@@ -1,5 +1,15 @@
 import "../css/RoomCard.css"
 
+export type Room = {
+  room_id: number,
+  name: string,
+  pack_id: number,
+  user_id: number,
+  users: number[],
+  current_users: number,
+  max_users: number,
+}
+
 type RoomCardProps = {
   name: string;
   curUsers: number;

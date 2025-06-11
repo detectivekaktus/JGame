@@ -350,7 +350,7 @@ func GetRoom(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetRooms(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("name")
+	name := strings.ToLower(r.URL.Query().Get("name"))
 
 	var responseRooms []*RoomResponse = make([]*RoomResponse, 0, MAX_ROOMS_RESPONSE)
 	for _, room := range rooms {
@@ -359,7 +359,7 @@ func GetRooms(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if name != "" {
-			if room.Name == name {
+			if strings.ToLower(room.Name) == name {
 				responseRooms = append(responseRooms, &RoomResponse{
 					Id: room.Id,
 					Name: room.Name,

@@ -3,8 +3,8 @@ import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import { Pack, PackCard } from "../components/PackCard";
 import { BASE_API_URL } from "../utils/consts";
-import { Button } from "../components/Button";
 import { Spinner } from "../components/Spinner";
+import { Search } from "../components/Search";
 import "../css/PacksPage.css"
 
 export function PacksPage() {
@@ -34,10 +34,7 @@ export function PacksPage() {
       <div className="page-wrapper">
         <Header />
         <div className="page">
-          <div className="margin-top container search">
-            <input className="search-bar" onChange={(e) => setQuery(e.currentTarget.value)} name="query" id="query" type="text" placeholder="Type pack name..." />
-            <Button onClick={handleQuery} className="search-bar-submit" stretch={false} dim={false}>Search</Button>
-          </div>
+          <Search placeholder="Type pack name..." setQuery={setQuery} handleQuery={handleQuery} />
           <div className="margin-top packs-menu container">
             <h2>Packs</h2>
             {
@@ -47,7 +44,7 @@ export function PacksPage() {
                 <div className="packs">
                   <ul className="packs-list">
                     { 
-                      !packs ?
+                      !packs || packs?.length === 0 ?
                         <h2>No packs found</h2>
                         :
                         packs.map((pack) => <PackCard key={pack.id} pack={pack} /> )

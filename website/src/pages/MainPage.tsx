@@ -1,13 +1,21 @@
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import { MeContext } from "../context/MeProvider";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "../components/Button";
+import { Room, RoomCard } from "../components/RoomCard";
+import { BASE_API_URL } from "../utils/consts";
+import { Spinner } from "../components/Spinner";
+import { Search } from "../components/Search";
 import "../css/MainPage.css"
 
 export function MainPage() {
+  const [query, setQuery] = useState("");
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const { me, loadingMe } = useContext(MeContext);
   const navigate = useNavigate();
 
@@ -17,7 +25,22 @@ export function MainPage() {
 
     if (!me)
       navigate("/");
+
+    fetch(`${BASE_API_URL}/rooms`)
+      .then(res => res.status === 200 ? res.json() : [])
+      .then(data => setRooms(data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
   }, [me, loadingMe])
+
+  const handleQuery = () => {
+    setLoading(true);
+    fetch(`${BASE_API_URL}/rooms?name=${query}`)
+      .then(res => res.status === 200 ? res.json() : [])
+      .then(data => setRooms(data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  };
 
   if (loadingMe)
     return <LoadingPage />
@@ -26,15 +49,21 @@ export function MainPage() {
     <div className="page-wrapper">
       <Header />
       <main className="page">
+        <Search placeholder="Type room name..." setQuery={setQuery} handleQuery={handleQuery} />
         <div className="margin-top margin-bottom container main-menu">
           <div className="menu-rooms">
             <h2>Rooms</h2>
-            {
-              true ? <h2>There are no rooms</h2> : 
-                <ul className="menu-rooms-list">
-                  { /* Fetch and render rooms */ }
-                </ul>
-            }
+            <ul className="menu-rooms-list">
+              {
+                loading ?
+                  <Spinner />
+                : 
+                  !rooms || rooms?.length === 0 ?
+                    <h2>There are no rooms</h2>
+                  :
+                    rooms.map((room) => <RoomCard name={room.name} curUsers={room.current_users} maxUsers={room.max_users}/>)
+              }
+            </ul>
           </div>
           <div className="menu-nav">
             <div className="bg-accent-600 menu-nav-room-desc">

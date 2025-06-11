@@ -110,7 +110,7 @@ func GetPack(w http.ResponseWriter, r *http.Request) {
 
 // Can apply `name` filter to the result. Returns max MAX_PACKS_RESPONSE packs.
 func GetPacks(w http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("name")
+	name := "%" + strings.ToLower(r.URL.Query().Get("name")) + "%"
 
 	conn := database.GetConnection()
 	defer conn.Close(context.Background())
@@ -118,11 +118,10 @@ func GetPacks(w http.ResponseWriter, r *http.Request) {
 	var rows pgx.Rows
 	if name == "" {
 		rows = database.QueryRows(conn, "SELECT * FROM packs.pack LIMIT $1", MAX_PACKS_RESPONSE)
-		defer rows.Close()
 	} else {
-		rows = database.QueryRows(conn, "SELECT * FROM packs.pack WHERE name = $1 LIMIT $2", name, MAX_PACKS_RESPONSE)
-		defer rows.Close()
+		rows = database.QueryRows(conn, "SELECT * FROM packs.pack WHERE LOWER(name) ILIKE $1 LIMIT $2", name, MAX_PACKS_RESPONSE)
 	}
+	defer rows.Close()
 
 	var packs []Pack
 	for rows.Next() {
