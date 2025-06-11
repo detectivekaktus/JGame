@@ -11,14 +11,15 @@ export type Room = {
 }
 
 type RoomCardProps = {
-  name: string;
-  curUsers: number;
-  maxUsers: number;
+  name: string,
+  curUsers: number,
+  maxUsers: number,
+  onClick: () => void
 }
 
-export function RoomCard({ name, curUsers, maxUsers }: RoomCardProps) {
+export function RoomCard({ name, curUsers, maxUsers, onClick }: RoomCardProps) {
   return (
-    <button className="button room stretch">
+    <button onClick={onClick} className="button room stretch">
       <h3>{name}</h3>
       <p>{curUsers}/{maxUsers}</p>
     </button>

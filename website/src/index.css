@@ -103,6 +103,10 @@ svg {
   }
 }
 
+strong {
+  font-weight: var(--fw-medium);
+}
+
 /* Utilities */
 
 .sr-only {
@@ -292,4 +296,3 @@ svg {
   justify-content: center;
   align-items: center;
 }
-

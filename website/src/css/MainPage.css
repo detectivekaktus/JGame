@@ -27,11 +27,14 @@
   gap: var(--fs-400);
 }
 
+.menu-nav-room h2 {
+  text-transform: uppercase;
+}
+
 .menu-nav-room ul {
   display: grid;
   gap: var(--fs-400);
 }
-
 
 .menu-rooms-list {
   display: grid;
