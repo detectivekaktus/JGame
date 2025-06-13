@@ -113,25 +113,6 @@ func NewRouter() *mux.Router {
 		chainMiddlewares(http.HandlerFunc(handler.DeleteRoom),
 			middleware.RejectBodyMiddleware)).
 	Methods("DELETE", "OPTIONS")
-	rooms.Handle("/{id:[0-9]+}/join",
-		chainMiddlewares(http.HandlerFunc(handler.JoinRoom),
-			middleware.RequireBodyMiddleware,
-			middleware.RequireJsonContentMiddleware)).
-	Methods("POST", "OPTIONS")
-	rooms.Handle("/{id:[0-9]+}/leave",
-		chainMiddlewares(http.HandlerFunc(handler.LeaveRoom),
-			middleware.RejectBodyMiddleware)).
-	Methods("POST", "OPTIONS")
-	rooms.Handle("/{id:[0-9]+}/ban",
-		chainMiddlewares(http.HandlerFunc(handler.BanUserInRoom),
-			middleware.RequireBodyMiddleware,
-			middleware.RequireJsonContentMiddleware)).
-	Methods("POST", "OPTIONS")
-	rooms.Handle("/{id:[0-9]+}/unban",
-		chainMiddlewares(http.HandlerFunc(handler.UnbanUserInRoom),
-			middleware.RequireBodyMiddleware,
-			middleware.RequireJsonContentMiddleware)).
-	Methods("POST", "OPTIONS")
 	// Available without auth
 	r.Handle("/rooms",
 		chainMiddlewares(http.HandlerFunc(handler.GetRooms),
