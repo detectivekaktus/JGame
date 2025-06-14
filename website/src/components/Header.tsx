@@ -44,7 +44,7 @@ export function Header() {
               <li><Link to="/main">Rooms</Link></li>
               <li><Link to="/packs">Quiz packs</Link></li>
               <li><Link to="/editor">Quiz editor</Link></li>
-              <li><Link to={`/profile/${me.id}`}>Profile</Link></li>
+              <li><Link to={`/profiles/${me.id}`}>Profile</Link></li>
             </ul>
           </nav>
           }

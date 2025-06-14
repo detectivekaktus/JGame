@@ -7,6 +7,7 @@ import { MainPage } from "./pages/MainPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { PacksPage } from "./pages/PacksPage";
+import { RoomPage } from "./pages/RoomPage";
 
 export const APP_ROUTER = createBrowserRouter([
   {
@@ -23,7 +24,7 @@ export const APP_ROUTER = createBrowserRouter([
         ]
       },
       {
-        path: "profile",
+        path: "profiles",
         children: [
           { index: true, Component: NotFoundPage },
           { path: ":id", Component: ProfilePage },
@@ -31,6 +32,13 @@ export const APP_ROUTER = createBrowserRouter([
         ]
       },
       { path: "packs", Component: PacksPage },
+      {
+        path: "rooms",
+        children: [
+          { index: true, Component: NotFoundPage },
+          { path: ":id", Component: RoomPage }
+        ]
+      },
       { path: "*", Component: NotFoundPage }
     ]
   },

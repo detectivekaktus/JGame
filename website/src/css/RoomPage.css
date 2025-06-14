@@ -1,0 +1,12 @@
+.players {
+  margin-top: var(--inner-spacing);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--fs-700);
+}
+
+.players * {
+  flex: 1 1 0px;
+}
+

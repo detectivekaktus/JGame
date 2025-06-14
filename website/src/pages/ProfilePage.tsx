@@ -70,7 +70,7 @@ export function ProfilePage() {
       <Header />
       <main className="margin-top margin-bottom container profile page">
         <div className="name-picture">
-          <h1>{ me?.id === Number(id) && <Link className="profile-settings" to="/profile/settings"><img src="/settings.svg" alt="Settings icon" /></Link> }{user?.name}</h1>
+          <h1>{ me?.id === Number(id) && <Link className="profile-settings" to="/profiles/settings"><img src="/settings.svg" alt="Settings icon" /></Link> }{user?.name}</h1>
         </div>
         <div className="profile-stats">
           <h2>Stats</h2>

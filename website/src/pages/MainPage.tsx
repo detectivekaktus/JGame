@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import { MeContext } from "../context/MeProvider";
@@ -116,7 +116,7 @@ export function MainPage() {
       return;
     }
 
-    navigate(`/room/${body["room_id"]}`);
+    navigate(`/rooms/${body["room_id"]}`);
   };
 
   if (loadingMe)
@@ -156,7 +156,7 @@ export function MainPage() {
                       <li>Quiz pack: <strong>{selectedRoomPackName}</strong></li>
                       <li>Players in room: <strong>{selectedRoom.current_users}</strong></li>
                       <li>Maximum players in room: <strong>{selectedRoom.max_users}</strong></li>
-                      <li><Button stretch={true} dim={true} >Join</Button></li>
+                      <li><Link to={`/rooms/${selectedRoom.room_id}`}><Button stretch={true} dim={true} >Join</Button></Link></li>
                     </ul>
                   </div>
               }
