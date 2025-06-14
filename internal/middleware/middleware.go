@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/detectivekaktus/JGame/internal/config"
 	"github.com/detectivekaktus/JGame/internal/database"
 	"github.com/detectivekaktus/JGame/internal/handler"
 	"github.com/detectivekaktus/JGame/internal/httputils"
@@ -91,6 +92,7 @@ func RequireJsonContentMiddleware(next http.Handler) http.Handler {
 var AllowedCorsOrigins = map[string]bool {
 	"https://127.0.0.1:5173": true,
 	"https://localhost:5173": true,
+	"https://" + config.AppConfig.LocalIp + ":5173": true,
 }
 
 // Sets up Cross-Origin Resource Sharing mechanism workarounds to accept requests

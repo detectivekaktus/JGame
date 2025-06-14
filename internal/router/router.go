@@ -5,6 +5,7 @@ import (
 
 	"github.com/detectivekaktus/JGame/internal/handler"
 	"github.com/detectivekaktus/JGame/internal/middleware"
+	"github.com/detectivekaktus/JGame/internal/websocket"
 	"github.com/gorilla/mux"
 )
 
@@ -121,6 +122,11 @@ func NewRouter() *mux.Router {
 	r.Handle("/rooms/{id:[0-9]+}",
 		chainMiddlewares(http.HandlerFunc(handler.GetRoom),
 			middleware.RejectBodyMiddleware)).
+		Methods("GET")
+
+	r.Handle("/ws",
+		chainMiddlewares(http.HandlerFunc(websocket.WebsocketHandler),
+			middleware.AuthMiddleware)).
 		Methods("GET")
 
 	return r

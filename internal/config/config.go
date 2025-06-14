@@ -12,6 +12,7 @@ type Config struct {
 	DbUrl       string
 	SslCertPath string
 	SslKeyPath  string
+	LocalIp     string
 }
 
 var AppConfig = load()
@@ -39,8 +40,13 @@ func load() *Config {
 	sslKeyPath := os.Getenv("SSL_KEY_PATH")
 
 	if sslCertificatePath == "" || sslKeyPath == "" {
-		fmt.Fprintf(os.Stderr, "No SSL certificate or key found. The dev environment must run with HTTPS. Obtain a SSL certificate.")
+		fmt.Fprintf(os.Stderr, "No SSL certificate or key found. The dev environment must run with HTTPS. Obtain a SSL certificate.\n")
 		os.Exit(1)
+	}
+
+	localIp := os.Getenv("LOCAL_IP")
+	if localIp == "" {
+		fmt.Fprintf(os.Stderr, "No local IP specified. The server will not respond to requests that don't come from localhost.\n")
 	}
 
 	c := &Config{
@@ -48,6 +54,7 @@ func load() *Config {
 		DbUrl: dbUrl,
 		SslCertPath: sslCertificatePath,
 		SslKeyPath: sslKeyPath,
+		LocalIp: localIp,
 	}
 	return c
 }

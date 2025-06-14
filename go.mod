@@ -7,6 +7,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/joho/godotenv v1.5.1
 	github.com/xeipuuv/gojsonschema v1.2.0
+	github.com/gorilla/websocket v1.5.3
 )
 
 require (
