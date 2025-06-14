@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { MeContext } from "../context/MeProvider";
 import { useNavigate, useParams } from "react-router-dom";
 import { Footer } from "../components/Footer";
@@ -17,7 +17,7 @@ type RoomParams = {
 export function RoomPage() {
   const { id } = useParams<RoomParams>();
 
-  const [ws, setWs] = useState<WebSocket | null>(null);
+  const ws = useRef<WebSocket | null>(null);
 
   const [started, setStarted] = useState(false);
   const [role, setRole] = useState("player");
@@ -35,22 +35,22 @@ export function RoomPage() {
     if (!me)
       navigate("/auth/login");
 
-    const checkRoomAndConnect = async () => {
+    const checkRoom = async () => {
       const res = await fetch(`${BASE_API_URL}/rooms/${id}`)
       if (res.status === 404) {
         setFound(false);
-        setLoading(false);
         return;
       }
-
-      const socket = new WebSocket(BASE_WS_URL);
-      setWs(socket);
-      setLoading(false);
     };
+    checkRoom();
 
-    checkRoomAndConnect();
+    ws.current = new WebSocket(BASE_WS_URL);
+    ws.current.onopen = () => console.debug("websocket opened");
+    ws.current.onclose = () => console.debug("websocket closed");
 
-    return () => ws?.close()
+    setLoading(false);
+    const wsCurrent = ws.current;
+    return () => wsCurrent.close()
   }, [me, loadingMe, id])
 
   if (loadingMe || loading)

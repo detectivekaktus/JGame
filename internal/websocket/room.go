@@ -31,13 +31,14 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		_, msg, err := conn.ReadMessage()
-		if err != nil {
+		if err != nil && websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 			fmt.Fprintf(os.Stderr, "Reading websocket message went wrong: %v\n", err)
 			return
 		}
 		fmt.Print(msg)
-
-		if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+		
+		err = conn.WriteMessage(websocket.TextMessage, msg);
+		if err != nil && websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 			fmt.Fprintf(os.Stderr, "Writing websocket message went wrong: %v\n", err)
 			return
 		}
