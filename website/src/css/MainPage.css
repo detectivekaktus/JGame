@@ -41,6 +41,22 @@
   gap: var(--fs-400);
 }
 
+.create-room-popup {
+  margin-top: var(--inner-spacing);
+  background: var(--clr-neutral-100);
+  padding: var(--fs-300);
+  color: var(--clr-neutral-800);
+}
+
+.create-room-popup h2 {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-700);
+}
+
+.create-room-popup button {
+  margin-top: var(--fs-400);
+}
+
 @media (min-width: 50em) {
   .main-menu {
     grid-template-columns: 2fr 1fr;

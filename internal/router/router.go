@@ -17,25 +17,27 @@ func chainMiddlewares(h http.Handler, middlewares ...func(http.Handler)http.Hand
 }
 
 func NewRouter() *mux.Router {
-	r := mux.NewRouter().PathPrefix("/api").Subrouter()
-	r.Use(middleware.CorsMiddleware)
+	root := mux.NewRouter()
+	root.Use(middleware.CorsMiddleware)
 
-	r.Handle("/register",
+	api := root.PathPrefix("/api").Subrouter()
+
+	api.Handle("/register",
 		chainMiddlewares(http.HandlerFunc(handler.RegisterUser),
 			middleware.RequireBodyMiddleware,
 			middleware.RequireJsonContentMiddleware)).
 		Methods("POST", "OPTIONS")
-	r.Handle("/login",
+	api.Handle("/login",
 		chainMiddlewares(http.HandlerFunc(handler.Login),
 			middleware.RequireBodyMiddleware,
 			middleware.RequireJsonContentMiddleware)).
 		Methods("POST", "OPTIONS")
-	r.Handle("/logout",
+	api.Handle("/logout",
 		chainMiddlewares(http.HandlerFunc(handler.Logout),
 			middleware.RejectBodyMiddleware)).
 		Methods("POST", "OPTIONS")
 
-	users := r.PathPrefix("/users").Subrouter()
+	users := api.PathPrefix("/users").Subrouter()
 	users.Use(middleware.AuthMiddleware)
 
 	users.Handle("/me",
@@ -57,12 +59,12 @@ func NewRouter() *mux.Router {
 			middleware.RejectBodyMiddleware)).
 		Methods("DELETE", "OPTIONS")
 	// Available without auth
-	r.Handle("/users/{id:[0-9]+}",
+	api.Handle("/users/{id:[0-9]+}",
 		chainMiddlewares(http.HandlerFunc(handler.GetUser),
 			middleware.RejectBodyMiddleware)).
 		Methods("GET")
 
-	packs := r.PathPrefix("/packs").Subrouter()
+	packs := api.PathPrefix("/packs").Subrouter()
 	packs.Use(middleware.AuthMiddleware)
 	packs.Handle("",
 		chainMiddlewares(http.HandlerFunc(handler.CreatePack),
@@ -84,16 +86,16 @@ func NewRouter() *mux.Router {
 			middleware.RejectBodyMiddleware)).
 		Methods("DELETE", "OPTIONS")
 	// Available without auth
-	r.Handle("/packs",
+	api.Handle("/packs",
 		chainMiddlewares(http.HandlerFunc(handler.GetPacks),
 			middleware.RejectBodyMiddleware)).
 		Methods("GET")
-	r.Handle("/packs/{id:[0-9]+}",
+	api.Handle("/packs/{id:[0-9]+}",
 		chainMiddlewares(http.HandlerFunc(handler.GetPack),
 			middleware.RejectBodyMiddleware)).
 		Methods("GET")
 
-	rooms := r.PathPrefix("/rooms").Subrouter()
+	rooms := api.PathPrefix("/rooms").Subrouter()
 	rooms.Use(middleware.AuthMiddleware)
 	rooms.Handle("",
 		chainMiddlewares(http.HandlerFunc(handler.CreateRoom),
@@ -115,19 +117,20 @@ func NewRouter() *mux.Router {
 			middleware.RejectBodyMiddleware)).
 	Methods("DELETE", "OPTIONS")
 	// Available without auth
-	r.Handle("/rooms",
+	api.Handle("/rooms",
 		chainMiddlewares(http.HandlerFunc(handler.GetRooms),
 			middleware.RejectBodyMiddleware)).
 		Methods("GET")
-	r.Handle("/rooms/{id:[0-9]+}",
+	api.Handle("/rooms/{id:[0-9]+}",
 		chainMiddlewares(http.HandlerFunc(handler.GetRoom),
 			middleware.RejectBodyMiddleware)).
 		Methods("GET")
 
-	r.Handle("/ws",
-		chainMiddlewares(http.HandlerFunc(websocket.WebsocketHandler),
-			middleware.AuthMiddleware)).
+	ws := root.PathPrefix("/ws").Subrouter()
+	ws.Use(middleware.AuthMiddleware)
+	ws.Handle("",
+		chainMiddlewares(http.HandlerFunc(websocket.WebsocketHandler))).
 		Methods("GET")
 
-	return r
+	return root
 }

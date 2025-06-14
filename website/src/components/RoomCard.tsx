@@ -10,6 +10,12 @@ export type Room = {
   max_users: number,
 }
 
+export type RoomRequestForm = {
+  name: string,
+  pack_id: number,
+  password?: string
+}
+
 type RoomCardProps = {
   name: string,
   curUsers: number,
