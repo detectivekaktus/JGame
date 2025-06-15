@@ -10,3 +10,12 @@
   flex: 1 1 0px;
 }
 
+.room-options {
+  margin-top: var(--inner-spacing);
+}
+
+.room-options ol {
+  display: flex;
+  gap: var(--inner-spacing);
+}
+
