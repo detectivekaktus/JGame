@@ -29,8 +29,6 @@ const (
 
 	LEAVE_ROOM     ActionType = "leave_room"
 	LEFT_ROOM      ActionType = "left_room"
-
-	DELETE_ROOM    ActionType = "delete_room"
 	ROOM_DELETED   ActionType = "room_deleted"
 
 	START_GAME     ActionType = "start_game"
@@ -56,8 +54,10 @@ type User struct {
 type Room struct {
 	handler.Room
 	Started     bool
-	Users       []*User
-	BannedUsers []*User
+	Users       map[int]*User
+	BannedUsers map[int]*User
+
+	Connections map[int]*websocket.Conn
 }
 
 var rooms map[int]*Room = make(map[int]*Room)
@@ -113,6 +113,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		var msg WSMessage
 		json.Unmarshal(raw, &msg)
+		fmt.Println(msg)
 		roomId, ok := msg.Payload["room_id"].(int)
 		if !ok {
 			err = sendError(conn, 400, "missing room_id")
@@ -183,11 +184,13 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				room.Users = append(room.Users, &User{
+				room.Users[session.UserId] = &User{
 					RoomId: roomId,
 					Id: session.UserId,
 					Role: OWNER,
-				})
+				}
+				room.CurrentUsers++
+				room.Connections[session.UserId] = conn
 				rooms[roomId] = &room
 				err := sendMessage(conn, WSMessage{
 					Type: JOINED_ROOM,
@@ -200,6 +203,13 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			} else {
+				if room.CurrentUsers >= handler.MAX_USERS_IN_ROOM {
+					err = sendError(conn, 503, "max users reached")
+					if err != nil {
+						return
+					}
+				}
+
 				_, err = database.Execute(dbConn, "INSERT INTO rooms.player (user_id, room_id) VALUES ($1, $2)", session.UserId, roomId)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Could not insert into the player table: %v\n", err)
@@ -211,11 +221,12 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				room.Users = append(room.Users, &User{
+				room.Users[session.UserId] = &User{
 					RoomId: roomId,
 					Id: session.UserId,
 					Role: PLAYER,
-				})
+				}
+				room.Connections[session.UserId] = conn
 				err := sendMessage(conn, WSMessage{
 					Type: JOINED_ROOM,
 					Payload: map[string]any{
@@ -226,6 +237,83 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					return
 				}
+			}
+
+			_, err = database.Execute(dbConn, "UPDATE rooms.room SET current_users = $1", room.CurrentUsers)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Could not update room: %v\n", err)
+				err = sendError(conn, 500, "internal server error")
+				if err != nil {
+					return
+				}
+				conn.Close()
+				return
+			}
+		}
+
+		case LEAVE_ROOM: {
+			dbConn := r.Context().Value("db_connection").(*pgx.Conn)
+			session := r.Context().Value("session").(*handler.Session)
+
+			room := rooms[roomId]
+
+			if room.UserId == session.UserId {
+				_, err = database.Execute(dbConn, "DELETE FROM rooms.player WHERE room_id = $1", roomId)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Could not delete user state: %v\n", err)
+					err = sendError(conn, 500, "internal server error")
+					if err != nil {
+						return
+					}
+					conn.Close()
+					return
+				}
+
+				_, err = database.Execute(dbConn, "DELETE FROM rooms.room WHERE room_id = $1", roomId)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Could not delete room: %v\n", err)
+					err = sendError(conn, 500, "internal server error")
+					if err != nil {
+						return
+					}
+					conn.Close()
+					return
+				}
+
+				for _, c := range room.Connections {
+					sendMessage(c, WSMessage{
+						Type: ROOM_DELETED,
+					})
+					c.Close()
+				}
+				delete(rooms, roomId)
+			} else {
+				_, err = database.Execute(dbConn, "DELETE FROM rooms.player WHERE user_id = $1", session.UserId)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Could not delete player state: %v\n", err)
+					err = sendError(conn, 500, "internal server error")
+					if err != nil {
+						return
+					}
+					conn.Close()
+					return
+				}
+
+				delete(room.Users, session.UserId)
+				room.CurrentUsers--
+
+				_, err = database.Execute(dbConn, "UPDATE rooms.room SET current_users = $1", room.CurrentUsers)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Could not update room: %v\n", err)
+					err = sendError(conn, 500, "internal server error")
+					if err != nil {
+						return
+					}
+					conn.Close()
+					return
+				}
+
+				sendMessage(conn, WSMessage{ Type: LEFT_ROOM, })
 			}
 		}
 
@@ -240,6 +328,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
+			room.Started = true
 			err := sendMessage(conn, WSMessage{ Type: GAME_STARTED, })
 			if err != nil {
 				return
