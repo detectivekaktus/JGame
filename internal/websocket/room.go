@@ -114,7 +114,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 		var msg WSMessage
 		json.Unmarshal(raw, &msg)
 		fmt.Println(msg)
-		roomId, ok := msg.Payload["room_id"].(int)
+		roomIdFloat, ok := msg.Payload["room_id"].(float64)
 		if !ok {
 			err = sendError(conn, 400, "missing room_id")
 			if err != nil {
@@ -122,6 +122,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			continue
 		}
+		roomId := int(roomIdFloat)
 
 		switch msg.Type {
 		case JOIN_ROOM: {

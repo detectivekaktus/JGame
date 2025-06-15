@@ -9,6 +9,7 @@ import "../css/RoomPage.css"
 import { NotFoundPage } from "./NotFoundPage";
 import { User } from "../types/user";
 import { UserCard } from "../components/UserCard";
+import { WSActionType, WSMessage } from "../utils/websocket";
 
 type RoomParams = {
   id: string,
@@ -44,9 +45,28 @@ export function RoomPage() {
     };
     checkRoom();
 
-    ws.current = new WebSocket(BASE_WS_URL);
-    ws.current.onopen = () => console.debug("websocket opened");
-    ws.current.onclose = () => console.debug("websocket closed");
+    if (!ws.current || ws.current.readyState === WebSocket.CLOSED || ws.current.readyState === WebSocket.CLOSING)
+      ws.current = new WebSocket(BASE_WS_URL);
+
+    ws.current.onopen = () => {
+      ws.current?.send(JSON.stringify({
+        type: WSActionType.JOIN_ROOM,
+        payload: {
+          room_id: Number(id)
+        }
+      } as WSMessage));
+
+      ws.current?.send(JSON.stringify({
+        type: WSActionType.GET_USERS,
+        payload: {
+          room_id: Number(id)
+        }
+      } as WSMessage))
+    };
+    ws.current.onmessage = (e) => {
+      const msg = JSON.stringify(e.data)
+      console.log(msg)
+    };
 
     setLoading(false);
     const wsCurrent = ws.current;
