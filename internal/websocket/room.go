@@ -203,10 +203,9 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 				room.BannedUsers = make(map[int]*User)
 
-				room.CurrentUsers++
 				rooms[roomId] = &room
 
-				_, err = database.Execute(dbConn, "UPDATE rooms.room SET current_users = $1", room.CurrentUsers)
+				_, err = database.Execute(dbConn, "UPDATE rooms.room SET current_users = $1", len(room.Users))
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Could not update room: %v\n", err)
 					err = sendError(conn, 500, "internal server error")
@@ -279,7 +278,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				room.Connections[session.UserId] = conn
 
-				_, err = database.Execute(dbConn, "UPDATE rooms.room SET current_users = $1", room.CurrentUsers)
+				_, err = database.Execute(dbConn, "UPDATE rooms.room SET current_users = $1", len(room.Users))
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Could not update room: %v\n", err)
 					err = sendError(conn, 500, "internal server error")
@@ -366,9 +365,8 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				}
 
 				delete(room.Users, session.UserId)
-				room.CurrentUsers--
 
-				_, err = database.Execute(dbConn, "UPDATE rooms.room SET current_users = $1", room.CurrentUsers)
+				_, err = database.Execute(dbConn, "UPDATE rooms.room SET current_users = $1", len(room.Users))
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Could not update room: %v\n", err)
 					err = sendError(conn, 500, "internal server error")
