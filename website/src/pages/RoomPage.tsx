@@ -98,6 +98,11 @@ export function RoomPage() {
           setStarted(msg.payload["started"]);
         } break;
 
+        case WSActionType.LEFT_ROOM:
+        case WSActionType.ROOM_DELETED: {
+          navigate(-1);
+        } break;
+
         default: {
           console.error(`encountered unknown action type ${msg.type}: ${JSON.stringify(msg.payload)}`)
           ws.current?.close();
@@ -113,6 +118,15 @@ export function RoomPage() {
   const handleStart = () => {
     ws.current?.send(JSON.stringify({
       type: WSActionType.START_GAME,
+      payload: {
+        room_id: Number(id)
+      }
+    } as WSMessage))
+  };
+
+  const handleLeave = () => {
+    ws.current?.send(JSON.stringify({
+      type: WSActionType.LEAVE_ROOM,
       payload: {
         room_id: Number(id)
       }
@@ -136,7 +150,12 @@ export function RoomPage() {
                 <div className="players">
                   { users.map((user, key) => <UserCard key={key} name={user.name} id={user.id}/>) }
                 </div>
-                {role === "owner" && <Button stretch={false} dim={false} onClick={handleStart}>Start</Button>}
+                <div className="room-options">
+                  <ol>
+                    <li><Button stretch={false} dim={false} onClick={handleLeave}>Leave</Button></li>
+                    {role === "owner" && <li><Button stretch={false} dim={false} onClick={handleStart}>Start</Button></li>}
+                  </ol>
+                </div>
               </div>
             :
               <div className="margin-top question">

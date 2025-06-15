@@ -322,7 +322,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 			room := rooms[roomId]
 
-			if room.UserId == session.UserId {
+			if room.Users[session.UserId].Role == OWNER {
 				_, err = database.Execute(dbConn, "DELETE FROM rooms.player WHERE room_id = $1", roomId)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Could not delete user state: %v\n", err)
@@ -378,6 +378,20 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				}
 
 				sendMessage(conn, WSMessage{ Type: LEFT_ROOM, })
+
+				var users []*User
+				for _, v := range rooms[roomId].Users {
+					users = append(users, v)
+				}
+
+				for _, c := range room.Connections {
+					sendMessage(c, WSMessage{
+						Type: USERS_LIST,
+						Payload: map[string]any{
+							"users": users,
+						},
+					})
+				}
 			}
 		}
 

@@ -4,6 +4,7 @@ export enum WSActionType {
 
   LEAVE_ROOM     = "leave_room",
   LEFT_ROOM      = "left_room",
+  ROOM_DELETED   = "room_deleted",
 
   START_GAME     = "start_game",
   GAME_STARTED   = "game_started",
