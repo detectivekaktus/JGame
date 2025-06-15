@@ -71,18 +71,20 @@ var upgrader websocket.Upgrader = websocket.Upgrader{
 	},
 }
 
-func sendMessage(conn *websocket.Conn, msg WSMessage) {
+func sendMessage(conn *websocket.Conn, msg WSMessage) error {
 	out, _ := json.Marshal(msg)
 	err := conn.WriteMessage(websocket.TextMessage, out)
-	if err != nil && websocket.IsUnexpectedCloseError(err,
-		websocket.CloseGoingAway,
-		websocket.CloseAbnormalClosure) {
-		fmt.Fprintf(os.Stderr, "Writing websocket message went wrong: %v\n", err)
+	if err != nil {
+		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			fmt.Fprintf(os.Stderr, "Writing websocket message went wrong: %v\n", err)
+		}
+		return err
 	}
+	return nil
 }
 
-func sendError(conn *websocket.Conn, code int, msg string) {
-	sendMessage(conn, WSMessage{
+func sendError(conn *websocket.Conn, code int, msg string) error {
+	return sendMessage(conn, WSMessage{
 		Type: ERROR,
 		Payload: map[string]any{
 			"code": code,
@@ -103,15 +105,20 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		_, raw, err := conn.ReadMessage()
-		if err != nil && websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-			fmt.Fprintf(os.Stderr, "Reading websocket message went wrong: %v\n", err)
-			continue
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				fmt.Fprintf(os.Stderr, "Reading websocket message went wrong: %v\n", err)
+			} 
+			return	
 		}
 		var msg WSMessage
 		json.Unmarshal(raw, &msg)
 		roomId, ok := msg.Payload["room_id"].(int)
 		if !ok {
-			sendError(conn, 400, "missing room_id")
+			err = sendError(conn, 400, "missing room_id")
+			if err != nil {
+				return
+			}
 			continue
 		}
 
@@ -125,13 +132,19 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				Scan(&user.Id, &user.RoomId)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Could not check user game status: %v\n", err)
-				sendError(conn, 500, "internal server error")
+				err = sendError(conn, 500, "internal server error")
+				if err != nil {
+					return
+				}
 				conn.Close()
 				return
 			}
 
 			if user.RoomId != 0 && user.RoomId != roomId {
-				sendError(conn, 400, "already in game")
+				err = sendError(conn, 400, "already in game")
+				if err != nil {
+					return
+				}
 				conn.Close()
 				return
 			}
@@ -143,12 +156,18 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					Scan(&room.Id, &room.UserId, &room.Name, &room.PackId, &room.CurrentUsers, &room.MaxUsers)
 				if err != nil {
 					if err == sql.ErrNoRows {
-						sendError(conn, 404, "no room with this id exists.")
+						err = sendError(conn, 404, "no room with this id exists.")
+						if err != nil {
+							return
+						}
 						conn.Close()
 						return
 					}
 					fmt.Fprintf(os.Stderr, "Could not get the room: %v\n", err)
-					sendError(conn, 500, "internal server error")
+					err = sendError(conn, 500, "internal server error")
+					if err != nil {
+						return
+					}
 					conn.Close()
 					return
 				}
@@ -156,7 +175,10 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				_, err = database.Execute(dbConn, "INSERT INTO rooms.player (user_id, room_id) VALUES ($1, $2)", session.UserId, roomId)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Could not insert into the player table: %v\n", err)
-					sendError(conn, 500, "internal server error")
+					err = sendError(conn, 500, "internal server error")
+					if err != nil {
+						return
+					}
 					conn.Close()
 					return
 				}
@@ -167,18 +189,24 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					Role: OWNER,
 				})
 				rooms[roomId] = &room
-				sendMessage(conn, WSMessage{
+				err := sendMessage(conn, WSMessage{
 					Type: JOINED_ROOM,
 					Payload: map[string]any{
 						"user_id": session.UserId,
 						"role": OWNER,
 					},
 				})
+				if err != nil {
+					return
+				}
 			} else {
 				_, err = database.Execute(dbConn, "INSERT INTO rooms.player (user_id, room_id) VALUES ($1, $2)", session.UserId, roomId)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Could not insert into the player table: %v\n", err)
-					sendError(conn, 500, "internal server error")
+					err = sendError(conn, 500, "internal server error")
+					if err != nil {
+						return
+					}
 					conn.Close()
 					return
 				}
@@ -188,13 +216,16 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					Id: session.UserId,
 					Role: PLAYER,
 				})
-				sendMessage(conn, WSMessage{
+				err := sendMessage(conn, WSMessage{
 					Type: JOINED_ROOM,
 					Payload: map[string]any{
 						"user_id": session.UserId,
 						"role": PLAYER,
 					},
 				})
+				if err != nil {
+					return
+				}
 			}
 		}
 
@@ -203,23 +234,35 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			room := rooms[roomId]
 
 			if session.UserId != room.UserId {
-				sendError(conn, 403, "only owner can start the game")
+				err = sendError(conn, 403, "only owner can start the game")
+				if err != nil {
+					return
+				}
 			}
 
-			sendMessage(conn, WSMessage{ Type: GAME_STARTED, })
+			err := sendMessage(conn, WSMessage{ Type: GAME_STARTED, })
+			if err != nil {
+				return
+			}
 		}
 
 		case GET_USERS: {
-			sendMessage(conn, WSMessage{
+			err := sendMessage(conn, WSMessage{
 				Type: USERS_LIST,
 				Payload: map[string]any{
-					"users": rooms[roomId],
+					"users": rooms[roomId].Users,
 				},
 			})
+			if err != nil {
+				return
+			}
 		}
 
 		default: {
-			sendError(conn, 400, "unknown action")
+			err = sendError(conn, 400, "unknown action")
+			if err != nil {
+				return
+			}
 		}
 		}
 	}
