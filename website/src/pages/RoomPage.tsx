@@ -7,9 +7,9 @@ import { Button } from "../components/Button";
 import { BASE_API_URL, BASE_WS_URL } from "../utils/consts";
 import "../css/RoomPage.css"
 import { NotFoundPage } from "./NotFoundPage";
-import { User } from "../types/user";
 import { UserCard } from "../components/UserCard";
-import { WSActionType, WSMessage } from "../utils/websocket";
+import { WSActionType, WSMessage, WSUser } from "../utils/websocket";
+import { User } from "../types/user";
 
 type RoomParams = {
   id: string,
@@ -62,16 +62,62 @@ export function RoomPage() {
           room_id: Number(id)
         }
       } as WSMessage))
+
+      ws.current?.send(JSON.stringify({
+        type: WSActionType.GET_GAME_STATE,
+        payload: {
+          room_id: Number(id)
+        }
+      } as WSMessage))
     };
     ws.current.onmessage = (e) => {
-      const msg = JSON.stringify(e.data)
-      console.log(msg)
+      const msg: WSMessage = JSON.parse(e.data)
+      console.debug(e.data)
+
+      switch (msg.type) {
+        case WSActionType.JOINED_ROOM: {
+          setRole(msg.payload["role"])
+        } break;
+
+        case WSActionType.USERS_LIST: {
+          const wsUsers: WSUser[] = msg.payload["users"]
+          Promise.all(
+            wsUsers.map((user) =>
+              fetch(`${BASE_API_URL}/users/${user.id}`).then((res) => res.json())
+            )
+          ).then((fetchedUsers) => {
+              setUsers(fetchedUsers);
+            });
+        } break;
+
+        case WSActionType.GAME_STARTED: {
+          setStarted(true);
+        } break;
+
+        case WSActionType.GAME_STATE: {
+          setStarted(msg.payload["started"]);
+        } break;
+
+        default: {
+          console.error(`encountered unknown action type ${msg.type}: ${JSON.stringify(msg.payload)}`)
+          ws.current?.close();
+        } break;
+      }
     };
 
     setLoading(false);
     const wsCurrent = ws.current;
     return () => wsCurrent.close()
   }, [me, loadingMe, id])
+
+  const handleStart = () => {
+    ws.current?.send(JSON.stringify({
+      type: WSActionType.START_GAME,
+      payload: {
+        room_id: Number(id)
+      }
+    } as WSMessage))
+  };
 
   if (loadingMe || loading)
     return <LoadingPage />
@@ -90,7 +136,7 @@ export function RoomPage() {
                 <div className="players">
                   { users.map((user, key) => <UserCard key={key} name={user.name} id={user.id}/>) }
                 </div>
-                {role === "owner" && <Button stretch={false} dim={false} onClick={() => setStarted(true)}>Start</Button>}
+                {role === "owner" && <Button stretch={false} dim={false} onClick={handleStart}>Start</Button>}
               </div>
             :
               <div className="margin-top question">

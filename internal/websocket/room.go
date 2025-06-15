@@ -3,6 +3,7 @@ package websocket
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -37,6 +38,9 @@ const (
 	GET_USERS      ActionType = "get_users"
 	USERS_LIST     ActionType = "users_list"
 
+	GET_GAME_STATE ActionType = "get_game_state"
+	GAME_STATE     ActionType = "game_state"
+
 	ERROR          ActionType = "error"
 )
 
@@ -46,9 +50,9 @@ type WSMessage struct {
 }
 
 type User struct {
-	Id     int
-	Role   UserRole
-	RoomId int
+	Id     int      `json:"id"`
+	Role   UserRole `json:"role"`
+	RoomId int      `json:"room_id"`
 }
 
 type Room struct {
@@ -133,13 +137,15 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			err = database.QueryRow(dbConn, "SELECT * FROM rooms.player WHERE user_id = $1", session.UserId).
 				Scan(&user.Id, &user.RoomId)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Could not check user game status: %v\n", err)
-				err = sendError(conn, 500, "internal server error")
-				if err != nil {
+				if !errors.Is(err, sql.ErrNoRows) {
+					fmt.Fprintf(os.Stderr, "Could not check user game status: %v\n", err)
+					err = sendError(conn, 500, "internal server error")
+					if err != nil {
+						return
+					}
+					conn.Close()
 					return
 				}
-				conn.Close()
-				return
 			}
 
 			if user.RoomId != 0 && user.RoomId != roomId {
@@ -185,14 +191,32 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
+				room.Users = make(map[int]*User)
 				room.Users[session.UserId] = &User{
 					RoomId: roomId,
 					Id: session.UserId,
 					Role: OWNER,
 				}
-				room.CurrentUsers++
+
+				room.Connections = make(map[int]*websocket.Conn)
 				room.Connections[session.UserId] = conn
+
+				room.BannedUsers = make(map[int]*User)
+
+				room.CurrentUsers++
 				rooms[roomId] = &room
+
+				_, err = database.Execute(dbConn, "UPDATE rooms.room SET current_users = $1", room.CurrentUsers)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Could not update room: %v\n", err)
+					err = sendError(conn, 500, "internal server error")
+					if err != nil {
+						return
+					}
+					conn.Close()
+					return
+				}
+
 				err := sendMessage(conn, WSMessage{
 					Type: JOINED_ROOM,
 					Payload: map[string]any{
@@ -203,12 +227,38 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					return
 				}
+
+				var users []*User
+				for _, v := range rooms[roomId].Users {
+					users = append(users, v)
+				}
+
+				for _, c := range room.Connections {
+					sendMessage(c, WSMessage{
+						Type: USERS_LIST,
+						Payload: map[string]any{
+							"users": users,
+						},
+					})
+				}
 			} else {
 				if room.CurrentUsers >= handler.MAX_USERS_IN_ROOM {
 					err = sendError(conn, 503, "max users reached")
 					if err != nil {
 						return
 					}
+				}
+
+				user, ok := room.Users[session.UserId]
+				if ok {
+					sendMessage(conn, WSMessage{
+						Type: JOINED_ROOM,
+						Payload: map[string]any{
+							"role": user.Role,
+							"user_id": user.Id,
+						},
+					})
+					continue
 				}
 
 				_, err = database.Execute(dbConn, "INSERT INTO rooms.player (user_id, room_id) VALUES ($1, $2)", session.UserId, roomId)
@@ -228,6 +278,18 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					Role: PLAYER,
 				}
 				room.Connections[session.UserId] = conn
+
+				_, err = database.Execute(dbConn, "UPDATE rooms.room SET current_users = $1", room.CurrentUsers)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Could not update room: %v\n", err)
+					err = sendError(conn, 500, "internal server error")
+					if err != nil {
+						return
+					}
+					conn.Close()
+					return
+				}
+
 				err := sendMessage(conn, WSMessage{
 					Type: JOINED_ROOM,
 					Payload: map[string]any{
@@ -238,17 +300,20 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					return
 				}
-			}
 
-			_, err = database.Execute(dbConn, "UPDATE rooms.room SET current_users = $1", room.CurrentUsers)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Could not update room: %v\n", err)
-				err = sendError(conn, 500, "internal server error")
-				if err != nil {
-					return
+				var users []*User
+				for _, v := range rooms[roomId].Users {
+					users = append(users, v)
 				}
-				conn.Close()
-				return
+
+				for _, c := range room.Connections {
+					sendMessage(c, WSMessage{
+						Type: USERS_LIST,
+						Payload: map[string]any{
+							"users": users,
+						},
+					})
+				}
 			}
 		}
 
@@ -337,10 +402,29 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		case GET_USERS: {
+			var users []*User
+			for _, v := range rooms[roomId].Users {
+				users = append(users, v)
+			}
+
 			err := sendMessage(conn, WSMessage{
 				Type: USERS_LIST,
 				Payload: map[string]any{
-					"users": rooms[roomId].Users,
+					"users": users,
+				},
+			})
+			if err != nil {
+				return
+			}
+		}
+
+		case GET_GAME_STATE: {
+			room := rooms[roomId]
+
+			err := sendMessage(conn, WSMessage{
+				Type: GAME_STATE,
+				Payload: map[string]any{
+					"started": room.Started,
 				},
 			})
 			if err != nil {
