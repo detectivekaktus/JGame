@@ -107,15 +107,6 @@ func CreateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = database.Execute(conn, "INSERT INTO rooms.player (user_id, room_id) VALUES ($1, $2)",
-		room.UserId, room.Id)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not create user status POST /api/rooms: %v\n", err)
-		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
-			"Could not register user status.")
-		return
-	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
@@ -124,7 +115,7 @@ func CreateRoom(w http.ResponseWriter, r *http.Request) {
 		Name: room.Name,
 		PackId: room.PackId,
 		UserId: room.UserId,
-		CurrentUsers: room.CurrentUsers,
+		CurrentUsers: 0,
 		MaxUsers: room.MaxUsers,
 	})
 }
