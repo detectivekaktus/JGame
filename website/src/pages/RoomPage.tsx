@@ -8,8 +8,7 @@ import { BASE_API_URL, BASE_WS_URL } from "../utils/consts";
 import "../css/RoomPage.css"
 import { NotFoundPage } from "./NotFoundPage";
 import { UserCard } from "../components/UserCard";
-import { WSActionType, WSMessage, WSUser } from "../utils/websocket";
-import { User } from "../types/user";
+import { WSActionType, WSMessage, WSQuestion, WSUser } from "../utils/websocket";
 
 type RoomParams = {
   id: string,
@@ -22,7 +21,9 @@ export function RoomPage() {
 
   const [started, setStarted] = useState(false);
   const [role, setRole] = useState("player");
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<WSUser[]>([])
+
+  const [question, setQuestion] = useState<WSQuestion | null>(null);
 
   const { me, loadingMe } = useContext(MeContext);
   const [loading, setLoading] = useState(true);
@@ -80,14 +81,7 @@ export function RoomPage() {
         } break;
 
         case WSActionType.USERS_LIST: {
-          const wsUsers: WSUser[] = msg.payload["users"]
-          Promise.all(
-            wsUsers.map((user) =>
-              fetch(`${BASE_API_URL}/users/${user.id}`).then((res) => res.json())
-            )
-          ).then((fetchedUsers) => {
-              setUsers(fetchedUsers);
-            });
+          setUsers(msg.payload["users"]);
         } break;
 
         case WSActionType.GAME_STARTED: {
@@ -150,18 +144,27 @@ export function RoomPage() {
                 <div className="players">
                   { users.map((user, key) => <UserCard key={key} name={user.name} id={user.id}/>) }
                 </div>
-                <div className="room-options">
-                  <ol>
-                    <li><Button stretch={false} dim={false} onClick={handleLeave}>Leave</Button></li>
-                    {role === "owner" && <li><Button stretch={false} dim={false} onClick={handleStart}>Start</Button></li>}
-                  </ol>
-                </div>
               </div>
             :
-              <div className="margin-top question">
+              <div className="margin-top room-in-game">
+                <div className="question-panel">
+                  <div className="question">{question?.title}</div>
+                  <div className="question-answer-options">
+                    { question?.answers.map((answer, key) => <Button key={key} stretch={true} dim={false}>{answer.text}</Button>) }
+                  </div>
+                </div>
+                <div className="leaderboard">
 
+                </div>
               </div>
           }
+          <div className="room-options">
+            <ol>
+              <li><Button stretch={false} dim={false} onClick={handleLeave}>Leave</Button></li>
+              {role === "owner" && !started && <li><Button stretch={false} dim={false} onClick={handleStart}>Start</Button></li>}
+              {role === "owner" && started && <li><Button stretch={false} dim={false}>Next question</Button></li>}
+            </ol>
+          </div>
         </div>
         <Footer />
       </div>

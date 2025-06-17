@@ -30,6 +30,20 @@ export enum WSUserRole {
 
 export interface WSUser {
   id:      number
+  name:    string
   role:    string
   room_id: number
+  points:  number
+}
+
+export interface WSAnswer {
+  text:    string
+  correct: boolean
+}
+
+export interface WSQuestion {
+  title:     string
+  image_url: string
+  value:     number
+  answers:   WSAnswer[]
 }

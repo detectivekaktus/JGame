@@ -55,7 +55,10 @@ type WSMessage struct {
 
 type User struct {
 	Id     int      `json:"id"`
+	Name   string   `json:"name"`
 	Role   UserRole `json:"role"`
+	Score  int      `json:"score"`
+
 	RoomId int      `json:"room_id"`
 }
 
@@ -259,9 +262,22 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				var users []*User
-				for _, v := range rooms[roomId].Users {
-					users = append(users, v)
+				rows := database.QueryRows(dbConn, "SELECT u.user_id, u.name FROM rooms.player p JOIN users.\"user\" u ON p.user_id = u.user_id WHERE p.room_id = $1", roomId)
+
+				var users []User
+				for rows.Next() {
+					var user User
+					err := rows.Scan(&user.Id, &user.Name)
+					if err != nil {
+						sendError(conn, 500, "could not get users")
+						return
+					}
+
+					user.Role = room.Users[user.Id].Role
+					user.Score = room.Users[user.Id].Score
+					user.RoomId = roomId
+
+					users = append(users, user)
 				}
 
 				for _, c := range room.Connections {
@@ -332,11 +348,23 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				var users []*User
-				for _, v := range rooms[roomId].Users {
-					users = append(users, v)
-				}
+				rows := database.QueryRows(dbConn, "SELECT u.user_id, u.name FROM rooms.player p JOIN users.\"user\" u ON p.user_id = u.user_id WHERE p.room_id = $1", roomId)
 
+				var users []User
+				for rows.Next() {
+					var user User
+					err := rows.Scan(&user.Id, &user.Name)
+					if err != nil {
+						sendError(conn, 500, "could not get users")
+						return
+					}
+
+					user.Role = room.Users[user.Id].Role
+					user.Score = room.Users[user.Id].Score
+					user.RoomId = roomId
+
+					users = append(users, user)
+				}
 				for _, c := range room.Connections {
 					sendMessage(c, WSMessage{
 						Type: USERS_LIST,
@@ -411,9 +439,22 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 				sendMessage(conn, WSMessage{ Type: LEFT_ROOM, })
 
-				var users []*User
-				for _, v := range rooms[roomId].Users {
-					users = append(users, v)
+				rows := database.QueryRows(dbConn, "SELECT u.user_id, u.name FROM rooms.player p JOIN users.\"user\" u ON p.user_id = u.user_id WHERE p.room_id = $1", roomId)
+
+				var users []User
+				for rows.Next() {
+					var user User
+					err := rows.Scan(&user.Id, &user.Name)
+					if err != nil {
+						sendError(conn, 500, "could not get users")
+						return
+					}
+
+					user.Role = room.Users[user.Id].Role
+					user.Score = room.Users[user.Id].Score
+					user.RoomId = roomId
+
+					users = append(users, user)
 				}
 
 				for _, c := range room.Connections {
@@ -439,16 +480,35 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			room.Started = true
-			err := sendMessage(conn, WSMessage{ Type: GAME_STARTED, })
-			if err != nil {
-				return
+
+			for _, c := range room.Connections {
+				err := sendMessage(c, WSMessage{ Type: GAME_STARTED, })
+				if err != nil {
+					return
+				}
 			}
 		}
 
 		case GET_USERS: {
-			var users []*User
-			for _, v := range rooms[roomId].Users {
-				users = append(users, v)
+			room := rooms[roomId]
+
+			dbConn := r.Context().Value("db_connection").(*pgx.Conn)
+			rows := database.QueryRows(dbConn, "SELECT u.user_id, u.name FROM rooms.player p JOIN users.\"user\" u ON p.user_id = u.user_id WHERE p.room_id = $1", roomId)
+
+			var users []User
+			for rows.Next() {
+				var user User
+				err := rows.Scan(&user.Id, &user.Name)
+				if err != nil {
+					sendError(conn, 500, "could not get users")
+					return
+				}
+
+				user.Role = room.Users[user.Id].Role
+				user.Score = room.Users[user.Id].Score
+				user.RoomId = roomId
+
+				users = append(users, user)
 			}
 
 			err := sendMessage(conn, WSMessage{
