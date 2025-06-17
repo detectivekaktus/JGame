@@ -1,0 +1,74 @@
+{
+  "title": "Test schema",
+  "questions": [
+    {
+      "title": "What is 2 + 2 equal to?",
+      "image_url": "",
+      "value": 100,
+      "answers": [
+        {
+          "text": "1",
+          "correct": false
+        },
+        {
+          "text": "2",
+          "correct": false
+        },
+        {
+          "text": "4",
+          "correct": true
+        },
+        {
+          "text": "6",
+          "correct": false
+        }
+      ]
+    },
+    {
+      "title": "What's the capital of the United States of America?",
+      "image_url": "",
+      "value": 200,
+      "answers": [
+        {
+          "text": "New York",
+          "correct": false
+        },
+        {
+          "text": "Seattle",
+          "correct": false
+        },
+        {
+          "text": "Washington DC",
+          "correct": true
+        },
+        {
+          "text": "Los Angeles",
+          "correct": false
+        }
+      ]
+    },
+    {
+      "title": "What's the chemical formula for water?",
+      "image_url": "",
+      "value": 300,
+      "answers": [
+        {
+          "text": "CO2",
+          "correct": false
+        },
+        {
+          "text": "H20",
+          "correct": true
+        },
+        {
+          "text": "SiO2",
+          "correct": false
+        },
+        {
+          "text": "C2OH",
+          "correct": false
+        }
+      ]
+    }
+  ]
+}

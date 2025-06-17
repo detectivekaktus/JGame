@@ -1,53 +1,33 @@
-{ 
+{
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Quiz schema",
   "type": "object",
   "properties": {
-    "sections": {
+    "questions": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "topics": {
+          "title": { "type": "string" },
+          "image_url": { "type": "string" },
+          "value": { "type": "number" },
+          "answers": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "name": { "type": "string" },
-                "questions": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "value": { "type": "number" },
-                      "question": { "type": "string" },
-                      "answers": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "text": { "type": "string" },
-                            "correct": {"type": "boolean" }
-                          },
-                          "required": ["text", "correct"]
-                        },
-                        "minimum": 2
-                      }
-                    },
-                    "required": ["value", "question", "answers"]
-                  }
-                }
+                "text": { "type": "string" },
+                "correct": { "type": "boolean" }
               },
-              "required": ["name", "questions"]
+              "required": ["text", "correct"]
             },
-            "minimum": 1
+            "minimum": 2
           }
         },
-        "required": ["name", "topics"]
+        "required": ["title", "value", "answers"],
+        "minimum": 1
       },
-      "minimum": 1
+      "required": ["questions"]
     }
-  },
-  "required": ["sections"]
+  }
 }

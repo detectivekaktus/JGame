@@ -25,23 +25,27 @@ const (
 )
 
 const (
-	JOIN_ROOM      ActionType = "join_room"
-	JOINED_ROOM    ActionType = "joined_room"
+	JOIN_ROOM       ActionType = "join_room"
+	JOINED_ROOM     ActionType = "joined_room"
 
-	LEAVE_ROOM     ActionType = "leave_room"
-	LEFT_ROOM      ActionType = "left_room"
-	ROOM_DELETED   ActionType = "room_deleted"
+	LEAVE_ROOM      ActionType = "leave_room"
+	LEFT_ROOM       ActionType = "left_room"
+	ROOM_DELETED    ActionType = "room_deleted"
 
-	START_GAME     ActionType = "start_game"
-	GAME_STARTED   ActionType = "game_started"
+	START_GAME      ActionType = "start_game"
+	GAME_STARTED    ActionType = "game_started"
 
-	GET_USERS      ActionType = "get_users"
-	USERS_LIST     ActionType = "users_list"
+	GET_USERS       ActionType = "get_users"
+	USERS_LIST      ActionType = "users_list"
 
-	GET_GAME_STATE ActionType = "get_game_state"
-	GAME_STATE     ActionType = "game_state"
+	GET_GAME_STATE  ActionType = "get_game_state"
+	GAME_STATE      ActionType = "game_state"
 
-	ERROR          ActionType = "error"
+	NEXT_QUESTION   ActionType = "next_question"
+	QUESTION        ActionType = "question"
+	QUESTIONS_DONE  ActionType = "questions_done"
+
+	ERROR           ActionType = "error"
 )
 
 type WSMessage struct {
@@ -55,13 +59,33 @@ type User struct {
 	RoomId int      `json:"room_id"`
 }
 
+type PackQuestion struct {
+	Title   string       `json:"title"`
+	ImgUrl  string       `json:"image_url"`
+	Answers []PackAnswer `json:"answers"`
+}
+
+type PackAnswer struct {
+	Text    string `json:"text"`
+	Value   int    `json:"value"`
+	Correct bool   `json:"correct"`
+}
+
+type Pack struct {
+	Title           string         `json:"title"`
+	Questions       []PackQuestion `json:"questions"`
+	CurrentQuestion int
+}
+
 type Room struct {
 	handler.Room
-	Started     bool
-	Users       map[int]*User
-	BannedUsers map[int]*User
+	Started         bool
+	Users           map[int]*User
+	BannedUsers     map[int]*User
 
-	Connections map[int]*websocket.Conn
+	Pack            Pack
+
+	Connections     map[int]*websocket.Conn
 }
 
 var rooms map[int]*Room = make(map[int]*Room)
@@ -190,6 +214,14 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					conn.Close()
 					return
 				}
+
+				var rawPackBody json.RawMessage
+				err = database.QueryRow(dbConn, "SELECT body FROM packs.pack WHERE pack_id = $1", room.PackId).
+					Scan(&rawPackBody)
+
+				var pack Pack
+				_ = json.Unmarshal(rawPackBody, &pack)
+				room.Pack = pack
 
 				room.Users = make(map[int]*User)
 				room.Users[session.UserId] = &User{
