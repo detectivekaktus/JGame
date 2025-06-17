@@ -33,7 +33,7 @@ export interface WSUser {
   name:    string
   role:    string
   room_id: number
-  points:  number
+  score:   number
 }
 
 export interface WSAnswer {

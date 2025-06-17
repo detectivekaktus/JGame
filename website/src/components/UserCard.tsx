@@ -3,13 +3,15 @@ import "../css/UserCard.css"
 
 type UserCardProps = {
   id: number,
-  name: string
+  name: string,
+  score: number | null
 }
 
-export function UserCard({ id, name }: UserCardProps) {
+export function UserCard({ id, name, score }: UserCardProps) {
   return (
     <div className="user-card">
       <Link to={`/profiles/${id}`} target="_blank" rel="noopener noreferrer">{name}</Link>
+      {score !== null && score}
     </div>
   );
 }

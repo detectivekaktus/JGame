@@ -19,3 +19,31 @@
   gap: var(--inner-spacing);
 }
 
+.room-in-game {
+  display: grid;
+  gap: var(--inner-spacing);
+}
+
+.question-panel {
+  display: grid;
+  gap: var(--inner-spacing);
+}
+
+.question {
+  color: var(--clr-accent-600);
+  font-weight: var(--fw-bold);
+  text-align: center;
+  font-size: var(--fs-700);
+}
+
+.question-answer-options {
+  display: grid;
+  gap: var(--fs-300);
+}
+
+@media (min-width: 50em) {
+  .room-in-game {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+  }
+}

@@ -142,19 +142,19 @@ export function RoomPage() {
               <div className="margin-top room-stats">
                 <h1>Players connected</h1>
                 <div className="players">
-                  { users.map((user, key) => <UserCard key={key} name={user.name} id={user.id}/>) }
+                  { users.map((user, key) => <UserCard key={key} name={user.name} id={user.id} score={null}/>) }
                 </div>
               </div>
             :
               <div className="margin-top room-in-game">
                 <div className="question-panel">
                   <div className="question">{question?.title}</div>
-                  <div className="question-answer-options">
-                    { question?.answers.map((answer, key) => <Button key={key} stretch={true} dim={false}>{answer.text}</Button>) }
-                  </div>
+                  <ol className="question-answer-options">
+                    { question?.answers.map((answer, key) => <li><Button key={key} stretch={true} dim={false}>{answer.text}</Button></li>) }
+                  </ol>
                 </div>
                 <div className="leaderboard">
-
+                  { users.sort((a, b) => b.score - a.score).map((user, key) => <UserCard key={key} name={user.name} id={user.id} score={user.score}/>) }
                 </div>
               </div>
           }
@@ -162,7 +162,6 @@ export function RoomPage() {
             <ol>
               <li><Button stretch={false} dim={false} onClick={handleLeave}>Leave</Button></li>
               {role === "owner" && !started && <li><Button stretch={false} dim={false} onClick={handleStart}>Start</Button></li>}
-              {role === "owner" && started && <li><Button stretch={false} dim={false}>Next question</Button></li>}
             </ol>
           </div>
         </div>

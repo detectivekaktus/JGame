@@ -1,6 +1,9 @@
 .user-card {
+  display: flex;
+  justify-content: space-between;
   background: var(--clr-accent-600);
   padding: var(--fs-300);
+  color: var(--clr-neutral-100);
 }
 
 .user-card a {
