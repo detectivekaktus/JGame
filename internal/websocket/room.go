@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sort"
 
 	"github.com/detectivekaktus/JGame/internal/database"
 	"github.com/detectivekaktus/JGame/internal/handler"
@@ -543,6 +544,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 		case NEXT_QUESTION: {
 			room := rooms[roomId]
+			dbConn := r.Context().Value("db_connection").(*pgx.Conn)
 			session := r.Context().Value("session").(*handler.Session)
 
 			if room.UserId != session.UserId {
@@ -560,6 +562,39 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 				}
+				rows := database.QueryRows(dbConn, "SELECT u.user_id, u.name FROM rooms.player p JOIN users.\"user\" u ON p.user_id = u.user_id WHERE p.room_id = $1", roomId)
+
+				var users []User
+				for rows.Next() {
+					var user User
+					err := rows.Scan(&user.Id, &user.Name)
+					if err != nil {
+						sendError(conn, 500, "could not get users")
+						return
+					}
+
+					user.Role = room.Users[user.Id].Role
+					user.Score = room.Users[user.Id].Score
+					user.RoomId = roomId
+
+					users = append(users, user)
+				}
+				sort.Slice(users, func(i, j int) bool {
+					return users[i].Score > users[j].Score
+				})
+
+				winner := users[0]
+				
+				_, err := database.Execute(dbConn, "UPDATE users.\"user\" SET matches_won = matches_won + 1 WHERE user_id = $1", winner.Id)
+				if err != nil {
+					fmt.Printf("Could not register a win: %v", err)
+					return
+				}
+
+				for _, user := range users {
+					database.Execute(dbConn, "UPDATE users.\"user\" SET matches_played = matches_played + 1 WHERE user_id = $1", user.Id)
+				}
+
 				continue
 			}
 

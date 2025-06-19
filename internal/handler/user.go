@@ -3,10 +3,12 @@ package handler
 // The users are stored in users.user PostgreSQL table. Currently, the
 // table looks like this, considering all the migrations done to it:
 // users.user(
-//   user_id  primary int,
-//   name     varchar(32),
-//   email    unique varchar(255),
-//   password text
+//   user_id        primary int,
+//   name           varchar(32),
+//   email          unique varchar(255),
+//   password       text
+//   matches_played int,
+//   matches_won    int
 // )
 
 import (
@@ -27,21 +29,30 @@ import (
 )
 
 type User struct {
-	Id       int    `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Id            int    `json:"id"`
+	Name          string `json:"name"`
+	Email         string `json:"email"`
+	Password      string `json:"password"`
+
+	MatchesPlayed int    `json:"matches_played"`
+	MatchesWon    int    `json:"matches_won"`
 }
 
 type VerifiedUserResponse struct {
-	Id    int    `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	Id            int    `json:"id"`
+	Name          string `json:"name"`
+	Email         string `json:"email"`
+
+	MatchesPlayed int    `json:"matches_played"`
+	MatchesWon    int    `json:"matches_won"`
 }
 
 type UnverifiedUserResponse struct {
-	Id    int    `json:"id"`
-	Name  string `json:"name"`
+	Id            int    `json:"id"`
+	Name          string `json:"name"`
+
+	MatchesPlayed int `json:"matches_played"`
+	MatchesWon    int    `json:"matches_won"`
 }
 
 func hashPassword(passwd string) (string, error) {
@@ -54,8 +65,8 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	session := r.Context().Value("session").(*Session)
 
 	var user User
-	err := database.QueryRow(conn, "SELECT user_id, email, name FROM users.\"user\" WHERE user_id = $1", session.UserId).
-		Scan(&user.Id, &user.Email, &user.Name)
+	err := database.QueryRow(conn, "SELECT user_id, email, name, matches_played, matches_won FROM users.\"user\" WHERE user_id = $1", session.UserId).
+		Scan(&user.Id, &user.Email, &user.Name, &user.MatchesPlayed, &user.MatchesWon)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not get logged in user GET /api/users/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
@@ -70,6 +81,8 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		Id: user.Id,
 		Name: user.Name,
 		Email: user.Email,
+		MatchesPlayed: user.MatchesPlayed,
+		MatchesWon: user.MatchesWon,
 	})
 }
 
@@ -81,7 +94,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close(context.Background())
 
 	var user User
-	err := database.QueryRow(conn, "SELECT user_id, name FROM users.\"user\" WHERE user_id = $1", id).
+	err := database.QueryRow(conn, "SELECT user_id, name, matches_played, matches_won FROM users.\"user\" WHERE user_id = $1", id).
 		Scan(&user.Id, &user.Name)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -102,6 +115,8 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(UnverifiedUserResponse{
 		Id: user.Id,
 		Name: user.Name,
+		MatchesPlayed: user.MatchesPlayed,
+		MatchesWon: user.MatchesWon,
 	})
 }
 
@@ -147,6 +162,12 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if user.MatchesPlayed != 0 || user.MatchesWon != 0 {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Excessive fields",
+			"matches_played and matches_won can't be changed.")
+		return
+	}
+
 	if strings.TrimSpace(user.Name) == "" || strings.TrimSpace(user.Email) == "" || user.Password == "" {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Missing fields",
 			"name, email, and password fields must be specified on PUT request.")
@@ -183,8 +204,8 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	err = database.QueryRow(conn, "SELECT user_id, email, name FROM users.\"user\" WHERE user_id = $1", session.UserId).
-		Scan(&user.Id, &user.Email, &user.Name)
+	err = database.QueryRow(conn, "SELECT user_id, email, name, matches_played, matches_won FROM users.\"user\" WHERE user_id = $1", session.UserId).
+		Scan(&user.Id, &user.Email, &user.Name, &user.MatchesPlayed, &user.MatchesWon)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not get user PUT /api/users/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
@@ -196,6 +217,8 @@ func PutCurrentUser(w http.ResponseWriter, r *http.Request) {
 		Id: user.Id,
 		Email: user.Email,
 		Name: user.Name,
+		MatchesPlayed: user.MatchesPlayed,
+		MatchesWon: user.MatchesWon,
 	})
 }
 
@@ -214,6 +237,12 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 	if user.Id != 0 {
 		httputils.SendErrorMessage(w, http.StatusBadRequest, "Malformatted request",
 			"Can't modify id of a user.")
+		return
+	}
+
+	if user.MatchesPlayed != 0 || user.MatchesWon != 0 {
+		httputils.SendErrorMessage(w, http.StatusBadRequest, "Excessive fields",
+			"matches_played and matches_won can't be changed.")
 		return
 	}
 
@@ -279,8 +308,8 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	err = database.QueryRow(conn, "SELECT user_id, email, name FROM users.\"user\" WHERE user_id = $1", session.UserId).
-		Scan(&user.Id, &user.Email, &user.Name)
+	err = database.QueryRow(conn, "SELECT user_id, email, name, matches_played, matches_won FROM users.\"user\" WHERE user_id = $1", session.UserId).
+		Scan(&user.Id, &user.Email, &user.Name, &user.MatchesPlayed, &user.MatchesWon)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not get user PATCH /api/users/me: %v\n", err)
 		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
@@ -292,6 +321,8 @@ func PatchCurrentUser(w http.ResponseWriter, r *http.Request) {
 		Id: user.Id,
 		Email: user.Email,
 		Name: user.Name,
+		MatchesPlayed: user.MatchesPlayed,
+		MatchesWon: user.MatchesWon,
 	})
 }
 

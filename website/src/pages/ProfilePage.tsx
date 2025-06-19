@@ -36,7 +36,12 @@ export function ProfilePage() {
     if (me.id === Number(id)) {
       setFound(true);
       setLoading(false);
-      setUser({ id: me.id, name: me.name });
+      setUser({
+        id: me.id,
+        name: me.name,
+        matches_played: me.matches_played,
+        matches_won: me.matches_won
+      });
       return;
     }
 
@@ -75,9 +80,8 @@ export function ProfilePage() {
         <div className="profile-stats">
           <h2>Stats</h2>
           <ul>
-            <li><StatBadge title="Matches played" progress="0" color={StatBadgeColor.DARK}/></li>
-            <li><StatBadge title="Matches won" progress="0" /></li>
-            <li><StatBadge title="Quizzes created" progress="0" color={StatBadgeColor.LIGHT} /></li>
+            <li><StatBadge title="Matches played" progress={user?.matches_played.toString() || "0"} color={StatBadgeColor.DARK}/></li>
+            <li><StatBadge title="Matches won" progress={user?.matches_won.toString() || "0"} /></li>
           </ul>
         </div>
       </main>

@@ -28,8 +28,8 @@ type Session struct {
 }
 
 type LoginResponse struct {
-	Message string	`json:"message"`
-	User VerifiedUserResponse `json:"user"`
+	Message string	             `json:"message"`
+	User    VerifiedUserResponse `json:"user"`
 }
 
 type LogoutResponse struct {
@@ -101,8 +101,8 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	user.Password = hash
 
 	var id int
-	err = database.QueryRow(conn, "INSERT INTO users.\"user\" (name, email, password) VALUES ($1, $2, $3) RETURNING user_id",
-		user.Name, user.Email, user.Password).Scan(&id)
+	err = database.QueryRow(conn, "INSERT INTO users.\"user\" (name, email, password, matches_played, matches_won) VALUES ($1, $2, $3, $4, $5) RETURNING user_id",
+		user.Name, user.Email, user.Password, 0, 0).Scan(&id)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == database.UniqueViolation {
 			httputils.SendErrorMessage(w, http.StatusConflict, "Conflict",
@@ -197,6 +197,15 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Partitioned: true,
 	})
 
+	err = database.QueryRow(conn, "SELECT user_id, email, name, matches_played, matches_won FROM users.\"user\" WHERE user_id = $1", user.Id).
+		Scan(&user.Id, &user.Email, &user.Name, &user.MatchesPlayed, &user.MatchesWon)
+	if err != nil {
+		fmt.Println(err)
+		httputils.SendErrorMessage(w, http.StatusInternalServerError, "Internal error",
+			"Could not get the user.")
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
@@ -206,6 +215,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			Id: user.Id,
 			Name: user.Name,
 			Email: user.Email,
+			MatchesPlayed: user.MatchesPlayed,
+			MatchesWon: user.MatchesWon,
 		},
 	})
 }
