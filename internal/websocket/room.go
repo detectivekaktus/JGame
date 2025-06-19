@@ -85,6 +85,7 @@ type Pack struct {
 type Room struct {
 	handler.Room
 	Started         bool
+	Finished        bool
 	Users           map[int]*User
 	BannedUsers     map[int]*User
 
@@ -236,6 +237,8 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 				room.Connections = make(map[int]*websocket.Conn)
 				room.Connections[session.UserId] = conn
+
+				room.Finished = false
 
 				room.BannedUsers = make(map[int]*User)
 
@@ -530,6 +533,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				Type: GAME_STATE,
 				Payload: map[string]any{
 					"started": room.Started,
+					"finished": room.Finished,
 				},
 			})
 			if err != nil {
@@ -549,6 +553,7 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if room.Pack.CurrentQuestion >= len(room.Pack.Questions) {
+				room.Finished = true
 				for _, c := range room.Connections {
 					err := sendMessage(c, WSMessage{ Type: QUESTIONS_DONE, })
 					if err != nil {
@@ -597,7 +602,6 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 			question := room.Pack.Questions[room.Pack.CurrentQuestion - 1]
 			for i, a := range question.Answers {
-				fmt.Println(answer, answer == i, a.Correct)
 				if answer == i && a.Correct {
 					room.Users[session.UserId].Score += question.Value
 				}

@@ -20,6 +20,7 @@ export function RoomPage() {
   const ws = useRef<WebSocket | null>(null);
 
   const [started, setStarted] = useState(false);
+  const [finished, setFinished] = useState(false);
   const [role, setRole] = useState<WSUserRole>(WSUserRole.PLAYER);
   const [users, setUsers] = useState<WSUser[]>([])
 
@@ -95,6 +96,7 @@ export function RoomPage() {
 
         case WSActionType.GAME_STATE: {
           setStarted(msg.payload["started"]);
+          setFinished(msg.payload["finished"]);
         } break;
 
         case WSActionType.QUESTION: {
@@ -103,12 +105,7 @@ export function RoomPage() {
         } break;
 
         case WSActionType.QUESTIONS_DONE: {
-          ws.current?.send(JSON.stringify({
-            type: WSActionType.LEAVE_ROOM,
-            payload: {
-              room_id: Number(id)
-            }
-          } as WSMessage));
+          setFinished(true);
         } break;
 
         case WSActionType.LEFT_ROOM:
@@ -179,6 +176,23 @@ export function RoomPage() {
 
   if (!found)
     return <NotFoundPage />
+
+  if (finished)
+    return (
+      <>
+        <div className="page-wrapper">
+          <div className="container page">
+            <h1 className="margin-top">Results</h1>
+            <div className="leaderboard">
+              <h2>Leaderboard</h2>
+              { users.sort((a, b) => b.score - a.score).map((user, key) => <UserCard key={key} name={user.name} id={user.id} score={user.score}/>) }
+            </div>
+            <Button className="margin-top" stretch={false} dim={false} onClick={handleLeave}>Leave</Button>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
 
   return (
     <>
