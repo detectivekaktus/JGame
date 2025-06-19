@@ -15,6 +15,10 @@ export enum WSActionType {
   GET_GAME_STATE = "get_game_state",
   GAME_STATE     = "game_state",
 
+  NEXT_QUESTION  = "next_question",
+  QUESTION       = "question",
+  QUESTIONS_DONE = "questions_done",
+
   ERROR          = "error"
 }
 

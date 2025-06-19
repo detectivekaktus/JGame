@@ -65,12 +65,12 @@ type User struct {
 type PackQuestion struct {
 	Title   string       `json:"title"`
 	ImgUrl  string       `json:"image_url"`
+	Value   int          `json:"value"`
 	Answers []PackAnswer `json:"answers"`
 }
 
 type PackAnswer struct {
 	Text    string `json:"text"`
-	Value   int    `json:"value"`
 	Correct bool   `json:"correct"`
 }
 
@@ -222,9 +222,8 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				err = database.QueryRow(dbConn, "SELECT body FROM packs.pack WHERE pack_id = $1", room.PackId).
 					Scan(&rawPackBody)
 
-				var pack Pack
-				_ = json.Unmarshal(rawPackBody, &pack)
-				room.Pack = pack
+				json.Unmarshal(rawPackBody, &room.Pack)
+				room.Pack.CurrentQuestion = 0
 
 				room.Users = make(map[int]*User)
 				room.Users[session.UserId] = &User{
@@ -536,7 +535,45 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		case NEXT_QUESTION: {
+			room := rooms[roomId]
+			session := r.Context().Value("session").(*handler.Session)
+
+			if room.UserId != session.UserId {
+				err := sendError(conn, 403, "next question can be invoked only by the room owner")
+				if err != nil {
+					return
+				}
+			}
+
+			if room.Pack.CurrentQuestion >= len(room.Pack.Questions) {
+				for _, c := range room.Connections {
+					err := sendMessage(c, WSMessage{ Type: QUESTIONS_DONE, })
+					if err != nil {
+						return
+					}
+				}
+				continue
+			}
+
+			question := room.Pack.Questions[room.Pack.CurrentQuestion]
+			room.Pack.CurrentQuestion++
+
+			for _, c := range room.Connections {
+				err := sendMessage(c, WSMessage{
+					Type: QUESTION,
+					Payload: map[string]any{
+						"question": question,
+					},
+				})
+				if err != nil {
+					return
+				}
+			}
+		}
+
 		default: {
+			fmt.Println(msg)
 			err = sendError(conn, 400, "unknown action")
 			if err != nil {
 				return

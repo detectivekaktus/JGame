@@ -8,7 +8,7 @@ import { BASE_API_URL, BASE_WS_URL } from "../utils/consts";
 import "../css/RoomPage.css"
 import { NotFoundPage } from "./NotFoundPage";
 import { UserCard } from "../components/UserCard";
-import { WSActionType, WSMessage, WSQuestion, WSUser } from "../utils/websocket";
+import { WSActionType, WSMessage, WSQuestion, WSUser, WSUserRole } from "../utils/websocket";
 
 type RoomParams = {
   id: string,
@@ -20,7 +20,7 @@ export function RoomPage() {
   const ws = useRef<WebSocket | null>(null);
 
   const [started, setStarted] = useState(false);
-  const [role, setRole] = useState("player");
+  const [role, setRole] = useState<WSUserRole>(WSUserRole.PLAYER);
   const [users, setUsers] = useState<WSUser[]>([])
 
   const [question, setQuestion] = useState<WSQuestion | null>(null);
@@ -46,7 +46,11 @@ export function RoomPage() {
     };
     checkRoom();
 
-    if (!ws.current || ws.current.readyState === WebSocket.CLOSED || ws.current.readyState === WebSocket.CLOSING)
+    if (
+      !ws.current ||
+      ws.current.readyState === WebSocket.CLOSED ||
+      ws.current.readyState === WebSocket.CLOSING
+    )
       ws.current = new WebSocket(BASE_WS_URL);
 
     ws.current.onopen = () => {
@@ -72,12 +76,12 @@ export function RoomPage() {
       } as WSMessage))
     };
     ws.current.onmessage = (e) => {
-      const msg: WSMessage = JSON.parse(e.data)
+      const msg: WSMessage = JSON.parse(e.data);
       console.debug(e.data)
 
       switch (msg.type) {
         case WSActionType.JOINED_ROOM: {
-          setRole(msg.payload["role"])
+          setRole(msg.payload["role"]);
         } break;
 
         case WSActionType.USERS_LIST: {
@@ -90,6 +94,19 @@ export function RoomPage() {
 
         case WSActionType.GAME_STATE: {
           setStarted(msg.payload["started"]);
+        } break;
+
+        case WSActionType.QUESTION: {
+          setQuestion(msg.payload["question"]);
+        } break;
+
+        case WSActionType.QUESTIONS_DONE: {
+          ws.current?.send(JSON.stringify({
+            type: WSActionType.LEAVE_ROOM,
+            payload: {
+              room_id: Number(id)
+            }
+          } as WSMessage));
         } break;
 
         case WSActionType.LEFT_ROOM:
@@ -115,7 +132,14 @@ export function RoomPage() {
       payload: {
         room_id: Number(id)
       }
-    } as WSMessage))
+    } as WSMessage));
+
+    ws.current?.send(JSON.stringify({
+      type: WSActionType.NEXT_QUESTION,
+      payload: {
+        room_id: Number(id)
+      }
+    } as WSMessage));
   };
 
   const handleLeave = () => {
@@ -124,7 +148,16 @@ export function RoomPage() {
       payload: {
         room_id: Number(id)
       }
-    } as WSMessage))
+    } as WSMessage));
+  };
+
+  const handleNextQuestion = () => {
+    ws.current?.send(JSON.stringify({
+      type: WSActionType.NEXT_QUESTION,
+      payload: {
+        room_id: Number(id)
+      }
+    } as WSMessage));
   };
 
   if (loadingMe || loading)
@@ -150,10 +183,11 @@ export function RoomPage() {
                 <div className="question-panel">
                   <div className="question">{question?.title}</div>
                   <ol className="question-answer-options">
-                    { question?.answers.map((answer, key) => <li><Button key={key} stretch={true} dim={false}>{answer.text}</Button></li>) }
+                    { question?.answers.map((answer, key) => <li key={key}><Button stretch={true} dim={false}>{answer.text}</Button></li>) }
                   </ol>
                 </div>
                 <div className="leaderboard">
+                  <h2>Leaderboard</h2>
                   { users.sort((a, b) => b.score - a.score).map((user, key) => <UserCard key={key} name={user.name} id={user.id} score={user.score}/>) }
                 </div>
               </div>
@@ -161,7 +195,8 @@ export function RoomPage() {
           <div className="room-options">
             <ol>
               <li><Button stretch={false} dim={false} onClick={handleLeave}>Leave</Button></li>
-              {role === "owner" && !started && <li><Button stretch={false} dim={false} onClick={handleStart}>Start</Button></li>}
+              { role === WSUserRole.OWNER && !started && <li><Button stretch={false} dim={false} onClick={handleStart}>Start</Button></li> }
+              { role === WSUserRole.OWNER && started && <li><Button stretch={false} dim={false} onClick={handleNextQuestion}>Next question</Button></li> }
             </ol>
           </div>
         </div>

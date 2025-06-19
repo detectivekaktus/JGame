@@ -41,6 +41,12 @@
   gap: var(--fs-300);
 }
 
+.leaderboard h2 {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-600);
+  margin-bottom: var(--fs-400);
+}
+
 @media (min-width: 50em) {
   .room-in-game {
     display: grid;
