@@ -25,27 +25,29 @@ const (
 )
 
 const (
-	JOIN_ROOM       ActionType = "join_room"
-	JOINED_ROOM     ActionType = "joined_room"
+	JOIN_ROOM      ActionType = "join_room"
+	JOINED_ROOM    ActionType = "joined_room"
 
-	LEAVE_ROOM      ActionType = "leave_room"
-	LEFT_ROOM       ActionType = "left_room"
-	ROOM_DELETED    ActionType = "room_deleted"
+	LEAVE_ROOM     ActionType = "leave_room"
+	LEFT_ROOM      ActionType = "left_room"
+	ROOM_DELETED   ActionType = "room_deleted"
 
-	START_GAME      ActionType = "start_game"
-	GAME_STARTED    ActionType = "game_started"
+	START_GAME     ActionType = "start_game"
+	GAME_STARTED   ActionType = "game_started"
 
-	GET_USERS       ActionType = "get_users"
-	USERS_LIST      ActionType = "users_list"
+	GET_USERS      ActionType = "get_users"
+	USERS_LIST     ActionType = "users_list"
 
-	GET_GAME_STATE  ActionType = "get_game_state"
-	GAME_STATE      ActionType = "game_state"
+	GET_GAME_STATE ActionType = "get_game_state"
+	GAME_STATE     ActionType = "game_state"
 
-	NEXT_QUESTION   ActionType = "next_question"
-	QUESTION        ActionType = "question"
-	QUESTIONS_DONE  ActionType = "questions_done"
+	NEXT_QUESTION  ActionType = "next_question"
+	QUESTION       ActionType = "question"
+	QUESTIONS_DONE ActionType = "questions_done"
 
-	ERROR           ActionType = "error"
+	ANSWER         ActionType = "answer"
+
+	ERROR          ActionType = "error"
 )
 
 type WSMessage struct {
@@ -569,6 +571,63 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					return
 				}
+			}
+		}
+
+		case ANSWER: {
+			room := rooms[roomId]
+			dbConn := r.Context().Value("db_connection").(*pgx.Conn)
+			session := r.Context().Value("session").(*handler.Session)
+
+			floatAnswer, ok := msg.Payload["answer"].(float64)
+			if !ok {
+				err := sendError(conn, 400, "expected answer to be given.")
+				if err != nil {
+					return
+				}
+			}
+			answer := int(floatAnswer)
+
+			if room.Pack.CurrentQuestion == 0 {
+				err := sendError(conn, 400, "no question has been successfully played yet.")
+				if err != nil {
+					return
+				}
+			}
+
+			question := room.Pack.Questions[room.Pack.CurrentQuestion - 1]
+			for i, a := range question.Answers {
+				fmt.Println(answer, answer == i, a.Correct)
+				if answer == i && a.Correct {
+					room.Users[session.UserId].Score += question.Value
+				}
+			}
+
+			rows := database.QueryRows(dbConn, "SELECT u.user_id, u.name FROM rooms.player p JOIN users.\"user\" u ON p.user_id = u.user_id WHERE p.room_id = $1", roomId)
+
+			var users []User
+			for rows.Next() {
+				var user User
+				err := rows.Scan(&user.Id, &user.Name)
+				if err != nil {
+					sendError(conn, 500, "could not get users")
+					return
+				}
+
+				user.Role = room.Users[user.Id].Role
+				user.Score = room.Users[user.Id].Score
+				user.RoomId = roomId
+
+				users = append(users, user)
+			}
+
+			for _, c := range room.Connections {
+				sendMessage(c, WSMessage{
+					Type: USERS_LIST,
+					Payload: map[string]any{
+						"users": users,
+					},
+				})
 			}
 		}
 

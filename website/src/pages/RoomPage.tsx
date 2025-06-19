@@ -24,6 +24,7 @@ export function RoomPage() {
   const [users, setUsers] = useState<WSUser[]>([])
 
   const [question, setQuestion] = useState<WSQuestion | null>(null);
+  const [answered, setAnswered] = useState(false);
 
   const { me, loadingMe } = useContext(MeContext);
   const [loading, setLoading] = useState(true);
@@ -98,6 +99,7 @@ export function RoomPage() {
 
         case WSActionType.QUESTION: {
           setQuestion(msg.payload["question"]);
+          setAnswered(false);
         } break;
 
         case WSActionType.QUESTIONS_DONE: {
@@ -160,6 +162,18 @@ export function RoomPage() {
     } as WSMessage));
   };
 
+  const submitAnswer = (index: number) => {
+    console.debug("answered")
+    setAnswered(true);
+    ws.current?.send(JSON.stringify({
+      type: WSActionType.ANSWER,
+      payload: {
+        room_id: Number(id),
+        answer: index
+      }
+    } as WSMessage));
+  };
+
   if (loadingMe || loading)
     return <LoadingPage />
 
@@ -183,7 +197,9 @@ export function RoomPage() {
                 <div className="question-panel">
                   <div className="question">{question?.title}</div>
                   <ol className="question-answer-options">
-                    { question?.answers.map((answer, key) => <li key={key}><Button stretch={true} dim={false}>{answer.text}</Button></li>) }
+                    { question?.answers.map((answer, key) =>
+                      <li key={key}><Button stretch={true} dim={false} onClick={() => submitAnswer(key)} disabled={answered}>{answer.text}</Button></li>
+                    ) }
                   </ol>
                 </div>
                 <div className="leaderboard">
