@@ -53,6 +53,7 @@ func GetUserSession(conn *pgx.Conn, r *http.Request) (*Session, error) {
 	}
 
 	if time.Now().UTC().After(session.ExpiresAt.UTC()) {
+		database.Execute(conn, "DELETE FROM users.user_session WHERE session_id = $1", session_cookie.Value)
 		return nil, errors.New("session expired")
 	}
 

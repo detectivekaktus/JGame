@@ -95,7 +95,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 	var user User
 	err := database.QueryRow(conn, "SELECT user_id, name, matches_played, matches_won FROM users.\"user\" WHERE user_id = $1", id).
-		Scan(&user.Id, &user.Name)
+		Scan(&user.Id, &user.Name, &user.MatchesPlayed, &user.MatchesWon)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			httputils.SendErrorMessage(w, http.StatusNotFound, "Not found",
