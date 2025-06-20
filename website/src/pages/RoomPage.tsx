@@ -95,8 +95,13 @@ export function RoomPage() {
         } break;
 
         case WSActionType.GAME_STATE: {
-          setStarted(msg.payload["started"]);
+          const msgStarted = msg.payload["started"];
+
+          setStarted(msgStarted);
           setFinished(msg.payload["finished"]);
+
+          if (msgStarted)
+            setQuestion(msg.payload["question"]);
         } break;
 
         case WSActionType.QUESTION: {

@@ -529,14 +529,20 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 		case GET_GAME_STATE: {
 			room := rooms[roomId]
-
-			err := sendMessage(conn, WSMessage{
+			
+			state := WSMessage{
 				Type: GAME_STATE,
 				Payload: map[string]any{
 					"started": room.Started,
 					"finished": room.Finished,
 				},
-			})
+			}
+
+			if room.Started && !room.Finished {
+				state.Payload["question"] = room.Pack.Questions[room.Pack.CurrentQuestion - 1]
+			}
+
+			err := sendMessage(conn, state)
 			if err != nil {
 				return
 			}
