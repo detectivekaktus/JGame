@@ -19,13 +19,11 @@ export function Footer() {
           <ul className="main-footer-list">
             <Link to="https://github.com/detectivekaktus/JGame"><li>Source code</li></Link>
             <Link to="/packs"><li>Quiz packs</li></Link>
-            <Link to="/editor"><li>Quiz editor</li></Link>
           </ul>
             :
           <ul className="main-footer-list">
             <Link to="https://github.com/detectivekaktus/JGame"><li>Source code</li></Link>
             <Link to="/packs"><li>Quiz packs</li></Link>
-            <Link to="/editor"><li>Quiz editor</li></Link>
             <Link to="/auth/signup"><li>Sign up</li></Link>
             <Link to="/auth/login"><li>Log in</li></Link>
           </ul>

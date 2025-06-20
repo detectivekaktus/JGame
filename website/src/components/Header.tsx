@@ -34,7 +34,6 @@ export function Header() {
             <ul aria-label="primary" className="primary-nav-list">
               <li><Link to="https://github.com/detectivekaktus/JGame">Source code</Link></li>
               <li><Link to="/packs">Quiz packs</Link></li>
-              <li><Link to="/editor">Quiz editor</Link></li>
               <li><Link to="/auth/signup">Sign up</Link></li>
             </ul>
           </nav>
@@ -43,7 +42,6 @@ export function Header() {
             <ul aria-label="primary" className="primary-nav-list">
               <li><Link to="/main">Rooms</Link></li>
               <li><Link to="/packs">Quiz packs</Link></li>
-              <li><Link to="/editor">Quiz editor</Link></li>
               <li><Link to={`/profiles/${me.id}`}>Profile</Link></li>
             </ul>
           </nav>
