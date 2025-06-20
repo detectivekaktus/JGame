@@ -294,6 +294,12 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					})
 				}
 			} else {
+				oldConn, ok := room.Connections[session.UserId]
+				if ok {
+					oldConn.Close()
+				}
+				room.Connections[session.UserId] = conn
+
 				if room.CurrentUsers >= handler.MAX_USERS_IN_ROOM {
 					err = sendError(conn, 503, "max users reached")
 					if err != nil {
@@ -329,7 +335,6 @@ func WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 					Id: session.UserId,
 					Role: PLAYER,
 				}
-				room.Connections[session.UserId] = conn
 
 				_, err = database.Execute(dbConn, "UPDATE rooms.room SET current_users = $1", len(room.Users))
 				if err != nil {

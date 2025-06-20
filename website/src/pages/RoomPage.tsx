@@ -1,14 +1,14 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { closeSocket, getSocket, onMessageType, sendMessage, WSActionType, WSMessage, WSQuestion, WSUser, WSUserRole } from "../utils/websocket";
+import { useContext, useEffect, useState } from "react";
 import { MeContext } from "../context/MeProvider";
 import { useNavigate, useParams } from "react-router-dom";
 import { Footer } from "../components/Footer";
 import { LoadingPage } from "./LoadingPage";
 import { Button } from "../components/Button";
-import { BASE_API_URL, BASE_WS_URL } from "../utils/consts";
+import { BASE_API_URL } from "../utils/consts";
 import "../css/RoomPage.css"
 import { NotFoundPage } from "./NotFoundPage";
 import { UserCard } from "../components/UserCard";
-import { WSActionType, WSMessage, WSQuestion, WSUser, WSUserRole } from "../utils/websocket";
 
 type RoomParams = {
   id: string,
@@ -16,8 +16,6 @@ type RoomParams = {
 
 export function RoomPage() {
   const { id } = useParams<RoomParams>();
-
-  const ws = useRef<WebSocket | null>(null);
 
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -48,132 +46,93 @@ export function RoomPage() {
     };
     checkRoom();
 
-    if (
-      !ws.current ||
-      ws.current.readyState === WebSocket.CLOSED ||
-      ws.current.readyState === WebSocket.CLOSING
-    )
-      ws.current = new WebSocket(BASE_WS_URL);
-
-    ws.current.onopen = () => {
-      ws.current?.send(JSON.stringify({
+    const socket = getSocket();
+    socket.addEventListener("open", () => {
+      socket.send(JSON.stringify({
         type: WSActionType.JOIN_ROOM,
         payload: {
           room_id: Number(id)
         }
       } as WSMessage));
 
-      ws.current?.send(JSON.stringify({
+      socket.send(JSON.stringify({
         type: WSActionType.GET_USERS,
         payload: {
           room_id: Number(id)
         }
-      } as WSMessage))
+      } as WSMessage));
 
-      ws.current?.send(JSON.stringify({
+      socket.send(JSON.stringify({
         type: WSActionType.GET_GAME_STATE,
         payload: {
           room_id: Number(id)
         }
-      } as WSMessage))
-    };
-    ws.current.onmessage = (e) => {
-      const msg: WSMessage = JSON.parse(e.data);
-      console.debug(e.data)
+      } as WSMessage));
+    });
 
-      switch (msg.type) {
-        case WSActionType.JOINED_ROOM: {
-          setRole(msg.payload["role"]);
-        } break;
-
-        case WSActionType.USERS_LIST: {
-          setUsers(msg.payload["users"]);
-        } break;
-
-        case WSActionType.GAME_STARTED: {
-          setStarted(true);
-        } break;
-
-        case WSActionType.GAME_STATE: {
-          const msgStarted = msg.payload["started"];
-
-          setStarted(msgStarted);
-          setFinished(msg.payload["finished"]);
-
-          if (msgStarted)
-            setQuestion(msg.payload["question"]);
-        } break;
-
-        case WSActionType.QUESTION: {
-          setQuestion(msg.payload["question"]);
-          setAnswered(false);
-        } break;
-
-        case WSActionType.QUESTIONS_DONE: {
-          setFinished(true);
-        } break;
-
-        case WSActionType.LEFT_ROOM:
-        case WSActionType.ROOM_DELETED: {
-          navigate(-1);
-        } break;
-
-        default: {
-          console.error(`encountered unknown action type ${msg.type}: ${JSON.stringify(msg.payload)}`)
-          ws.current?.close();
-        } break;
-      }
-    };
+    onMessageType(WSActionType.JOINED_ROOM, (msg: WSMessage) => setRole(msg.payload["role"]));
+    onMessageType(WSActionType.USERS_LIST, (msg: WSMessage) => setUsers(msg.payload["users"]));
+    onMessageType(WSActionType.GAME_STARTED, () => setStarted(true));
+    onMessageType(WSActionType.QUESTION, (msg: WSMessage) => { setQuestion(msg.payload["question"]); setAnswered(false); })
+    onMessageType(WSActionType.QUESTIONS_DONE, () => setFinished(true));
+    onMessageType(WSActionType.LEFT_ROOM, () => navigate(-1));
+    onMessageType(WSActionType.ROOM_DELETED, () => navigate(-1));
+    onMessageType(WSActionType.GAME_STATE, (msg: WSMessage) => {
+      const msgStarted = msg.payload["started"];
+      setStarted(msgStarted);
+      setFinished(msg.payload["finished"]);
+      if (msgStarted)
+        setQuestion(msg.payload["question"]);
+    });
 
     setLoading(false);
-    const wsCurrent = ws.current;
-    return () => wsCurrent.close()
+    return () => closeSocket();
   }, [me, loadingMe, id])
 
   const handleStart = () => {
-    ws.current?.send(JSON.stringify({
+    sendMessage({
       type: WSActionType.START_GAME,
       payload: {
         room_id: Number(id)
       }
-    } as WSMessage));
+    } as WSMessage);
 
-    ws.current?.send(JSON.stringify({
+    sendMessage({
       type: WSActionType.NEXT_QUESTION,
       payload: {
         room_id: Number(id)
       }
-    } as WSMessage));
+    } as WSMessage);
   };
 
   const handleLeave = () => {
-    ws.current?.send(JSON.stringify({
+    sendMessage({
       type: WSActionType.LEAVE_ROOM,
       payload: {
         room_id: Number(id)
       }
-    } as WSMessage));
+    } as WSMessage);
   };
 
   const handleNextQuestion = () => {
-    ws.current?.send(JSON.stringify({
+    sendMessage({
       type: WSActionType.NEXT_QUESTION,
       payload: {
         room_id: Number(id)
       }
-    } as WSMessage));
+    } as WSMessage);
   };
 
   const submitAnswer = (index: number) => {
     console.debug("answered")
     setAnswered(true);
-    ws.current?.send(JSON.stringify({
+    sendMessage({
       type: WSActionType.ANSWER,
       payload: {
         room_id: Number(id),
         answer: index
       }
-    } as WSMessage));
+    } as WSMessage);
   };
 
   if (loadingMe || loading)
