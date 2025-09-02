@@ -179,11 +179,6 @@ export function MainPage() {
                       <input required id="pack_id" name="pack_id" type="number" min={1} defaultValue={1} />
                       { createRoomErrors.pack_id && <div className="form-entry-error">{createRoomErrors.pack_id}</div> }
                     </div>
-                    <div className="form-entry">
-                      <label htmlFor="name">Password</label>
-                      <input id="password" name="password" type="text" />
-                      { createRoomErrors.password && <div className="form-entry-error">{createRoomErrors.password}</div> }
-                    </div>
                     <Button stretch={true} dim={false} type="submit">Create</Button>
                   </form>
                 </div>
